@@ -13,6 +13,13 @@ musicList = wrapper.querySelector(".music-list"),
 showMoreButton = wrapper.querySelector("#more-music"),
 hideMusicButton = musicList.querySelector("#close");
 
+// ========================
+// ORDENAR MÚSICAS (A → Z)
+// ========================
+allMusic.sort((a, b) => {
+  return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+});
+
 // Carrega música aleatória na atualização da página
 let musicIndex = Math.floor((Math.random() * allMusic.length) + 1);
 
@@ -259,14 +266,17 @@ const ulTag = wrapper.querySelector("ul");
 // Cria <li> de acordo com o comprimento do array (Exibindo a Lista de Música)
 for (let i = 0; i < allMusic.length; i++) {
     // Passando o nome da música e artista do array para a li
-    let liTag = `<li li-index="${i + 1}">
-                    <div class="row">
-                        <span>${allMusic[i].name}</span>
-                        <p>${allMusic[i].artist}</p>
-                    </div>
-                    <audio class="${allMusic[i].src}" src="music/${allMusic[i].src}.mp3"></audio>
-                    <span id="${allMusic[i].src}" class="audio-duration">3:40</span>
-                </li>`;
+        let liTag = `<li li-index="${i + 1}">
+        <div class="row">
+            <span class="track-number">${i + 1}.</span>
+            <div class="track-info">
+            <span class="track-title">${allMusic[i].name}</span>
+            <p class="track-artist">${allMusic[i].artist}</p>
+            </div>
+        </div>
+        <audio class="${allMusic[i].src}" src="music/${allMusic[i].src}.mp3"></audio>
+        <span id="${allMusic[i].src}" class="audio-duration">3:40</span>
+        </li>`;
         ulTag.insertAdjacentHTML("beforeend", liTag);
         
         let liAudioDuration = ulTag.querySelector(`#${allMusic[i].src}`);

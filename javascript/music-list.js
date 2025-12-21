@@ -140,4 +140,18 @@ let allMusic = [
         src: "Percy"
     },
 
+    {
+        name: "JUST THE WAY ARE",
+        artist: "BONUS SONG",
+        img: "Card",
+        src: "Card"
+    },
+
+    {
+        name: "I DON'T WANT TO MISS A THING",
+        artist: "BONUS SONG",
+        img: "Miss",
+        src: "Miss"
+    },
+
 ]
