@@ -161,4 +161,18 @@ let allMusic = [
         src: "Walking"
     },
 
+    {
+        name: "WHITE CHOCOLATE",
+        artist: "feat. Dan",
+        img: "Dan",
+        src: "Dan"
+    },
+
+    {
+        name: "MALDITA",
+        artist: "feat. Rê",
+        img: "Re",
+        src: "Re"
+    },
+
 ]
