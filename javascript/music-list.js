@@ -133,4 +133,11 @@ let allMusic = [
         src: "Colgate"
     },
 
+    {
+        name: "CALLED BY THE OCEAN",
+        artist: "BONUS SONG",
+        img: "Percy",
+        src: "Percy"
+    },
+
 ]
