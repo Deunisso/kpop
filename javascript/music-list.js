@@ -88,7 +88,7 @@ let allMusic = [
         name: "HOLD ME HERE",
         artist: "I will always hold you",
         img: "Thunder",
-        src: "Thunder"
+        src: "ThunderV2"
     },
     
     {
