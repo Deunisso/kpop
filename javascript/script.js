@@ -21,12 +21,71 @@ window.addEventListener("load", ()=> {
     playingNow();
 });
 
+// ========================
+// LYRICS via TXT (fetch)
+// ========================
+const lyricsContent = document.getElementById("lyrics-content");
+const lyricsStatus = document.getElementById("lyrics-status");
+
+// cache para não baixar de novo toda vez
+const lyricsCache = new Map();
+
+async function loadLyricsBySrc(songSrc){
+  if (!lyricsContent) return;
+
+  // UI: loading
+  lyricsStatus.textContent = "Carregando...";
+  lyricsContent.innerHTML = `<p class="lyrics-empty">Carregando letra...</p>`;
+
+  // cache
+  if (lyricsCache.has(songSrc)) {
+    const cached = lyricsCache.get(songSrc);
+    lyricsStatus.textContent = "";
+    lyricsContent.innerHTML = `<p>${cached}</p>`;
+    lyricsContent.scrollTop = 0;
+    return;
+  }
+
+  const url = `lyrics/${encodeURIComponent(songSrc)}.txt`;
+
+  try {
+    const res = await fetch(url, { cache: "no-cache" });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const text = (await res.text()).trim();
+
+    if (!text) {
+      lyricsStatus.textContent = "Vazio";
+      lyricsContent.innerHTML = `<p class="lyrics-empty">Letra vazia nesse arquivo.</p>`;
+      return;
+    }
+
+    lyricsCache.set(songSrc, text);
+    lyricsStatus.textContent = "";
+    lyricsContent.innerHTML = `<p>${text}</p>`;
+    lyricsContent.scrollTop = 0;
+
+  } catch (err) {
+    // fallback amigável
+    lyricsStatus.textContent = "Não encontrada";
+    lyricsContent.innerHTML = `<p class="lyrics-empty">Sem letra para essa música (crie: ${url})</p>`;
+  }
+}
+
 // Funçãp que realiza o carregamento da Música
 function loadMusic(indexNumb) {
-    musicName.innerText = allMusic[indexNumb - 1].name;
-    musicArtist.innerText = allMusic[indexNumb - 1].artist;
-    musicImage.src = `img/${allMusic[indexNumb - 1].img}.jpg`;
-    mainAudio.src = `music/${allMusic[indexNumb - 1].src}.mp3`;
+  const song = allMusic[indexNumb - 1];
+
+  musicName.innerText = song.name;
+  musicArtist.innerText = song.artist;
+  musicImage.src = `img/${song.img}.jpg`;
+  mainAudio.src = `music/${song.src}.mp3`;
+
+  // 🔥 carrega a letra do TXT
+  loadLyricsBySrc(song.src);
 }
 
 // Função Play

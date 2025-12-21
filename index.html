@@ -29,13 +29,16 @@
                 <i class='bx bxs-moon'></i>
             </div>
         </div>
+        
         <div class="img-area">
             <img src="./img/bluemoon.jpg" alt="">
         </div>
+
         <div class="song-details">
             <p class="name"></p>
             <p class="artist"></p>
         </div>
+
         <div class="progress-area">
             <div class="progress-bar"></div>
             <div class="timer">
@@ -44,6 +47,7 @@
             </div>
             <audio id="main-audio" src=""></audio>
         </div>
+
         <div class="controls">
             <i id="repeat-plist" class="material-icons" title="Playlist Loop">repeat</i>
             <i id="prev" class='bx bx-skip-previous'></i>
@@ -53,6 +57,19 @@
             <i id="next" class='bx bx-skip-next'></i>
             <i id="more-music" class='bx bxs-playlist'></i>
         </div>
+
+        <!-- Karaoke / Lyrics -->
+        <div class="lyrics-box">
+            <div class="lyrics-header">
+                <span class="lyrics-title">Lyrics</span>
+                <span id="lyrics-status" class="lyrics-status"></span>
+            </div>
+
+            <div id="lyrics-content" class="lyrics-content">
+                <p class="lyrics-empty">Carregando letra...</p>
+            </div>
+        </div>
+
         <div class="music-list">
             <div class="header">
                 <div class="row">
