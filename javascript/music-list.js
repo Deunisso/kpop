@@ -126,4 +126,11 @@ let allMusic = [
         src: "New"
     },
 
+    {
+        name: "COLGATE",
+        artist: "BONUS SONG",
+        img: "Colgate",
+        src: "Colgate"
+    },
+
 ]
