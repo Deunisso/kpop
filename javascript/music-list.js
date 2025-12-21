@@ -175,4 +175,11 @@ let allMusic = [
         src: "Re"
     },
 
+    {
+        name: "WE LOVED YOU",
+        artist: "The chair is for me",
+        img: "Vo",
+        src: "Vo"
+    },
+    
 ]
