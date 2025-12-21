@@ -74,7 +74,7 @@ let allMusic = [
         name: "HARD CALM",
         artist: "My lovely little storm",
         img: "Angry",
-        src: "Angry"
+        src: "AngryV2"
     },
 
     {
