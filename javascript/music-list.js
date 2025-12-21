@@ -109,7 +109,7 @@ let allMusic = [
         name: "GREAT RESPONSIBILITIES",
         artist: "I always knew it was you",
         img: "Responsibilities",
-        src: "Responsibilities"
+        src: "ResponsibilitiesV2"
     },
 
     {
