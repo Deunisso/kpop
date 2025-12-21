@@ -154,4 +154,11 @@ let allMusic = [
         src: "Miss"
     },
 
+    {
+        name: "STILL WALKING WITH YOU",
+        artist: "BONUS SONG",
+        img: "Walking",
+        src: "Walking"
+    },
+
 ]
