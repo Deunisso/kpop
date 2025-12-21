@@ -92,7 +92,7 @@ let allMusic = [
     },
     
     {
-        name: "NO BRAKES (EXPLICIT)",
+        name: "NO BRAKES (TRAP)",
         artist: "I love our intensity",
         img: "Explicit",
         src: "Explicit"
@@ -110,6 +110,20 @@ let allMusic = [
         artist: "I always knew it was you",
         img: "Responsibilities",
         src: "Responsibilities"
+    },
+
+    {
+        name: "MY CHRISTMAS WISH",
+        artist: "BONUS SONG",
+        img: "Santa",
+        src: "Santa"
+    },
+
+    {
+        name: "NEW YEAR, SAME US",
+        artist: "BONUS SONG",
+        img: "New",
+        src: "New"
     },
 
 ]
