@@ -82,14 +82,6 @@ async function loadLyricsBySrc(songSrc){
   }
 }
 
-const fabBtn = document.getElementById("fabBtn");
-
-if (fabBtn) {
-  fabBtn.addEventListener("click", () => {
-    window.open("https://drive.google.com/drive/folders/1rMGXk5v3RbjF7N8OonxFi6XA1NJGglpk?usp=drive_link", "_blank");
-  });
-}
-
 // Funçãp que realiza o carregamento da Música
 function loadMusic(indexNumb) {
   const song = allMusic[indexNumb - 1];

@@ -444,45 +444,6 @@ ul li.playing {
   text-align: center;
 }
 
-/* Dark mode */
-.is-dark .lyrics-box{ background: rgba(0,0,0,0.25); }
-.is-dark .lyrics-title,
-.is-dark .lyrics-content p{ color: var(--white-mode); }
-
-/* Botão flutuante (canto inferior direito da tela) */
-.fab-btn{
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: 56px;
-  height: 56px;
-  border: 0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: linear-gradient(var(--main-color) 0%, var(--secundary-color) 100%);
-  color: #fff;
-  box-shadow: 0px 10px 25px rgba(0,0,0,0.25);
-  cursor: pointer;
-  z-index: 9999;
-  transition: transform .15s ease, filter .15s ease;
-}
-
-.fab-btn:hover{ transform: translateY(-2px); filter: brightness(1.05); }
-.fab-btn:active{ transform: translateY(0px) scale(0.98); }
-
-.fab-btn .material-icons{
-  font-size: 26px;
-  line-height: 1;
-}
-
-/* Dark mode (opcional: manter bonito no escuro) */
-.is-dark .fab-btn{
-  box-shadow: 0px 10px 25px rgba(0,0,0,0.45);
-}
-
 .row {
   display: flex;
   align-items: center;
