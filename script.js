@@ -8,7 +8,7 @@
     hora: 19,
     minuto: 35,
     segundo: 0,
-    redirectPara: window.location.origin + "/phases",
+    redirectPara: new URL("../phases/index.html", window.location.href).toString(),
   };
 
   const liberarEm = new Date(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo);
