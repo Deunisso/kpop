@@ -1,97 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>11</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="icon" type="image/png" href="./img/favicon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contagem Regressiva</title>
 
+  <link rel="prefetch" href="./index.html">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="icon" type="image/png" href="./img/favicon.png">
 </head>
 
 <body>
-    <!DOCTYPE html>
-    <html lang="en">
+  <div class="spot"></div>
+  <div class="flash" id="flash"></div>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="./style.css">
-    </head>
+  <!-- Loading falso estilo show -->
+  <div class="loading" id="loading" aria-hidden="true">
+    <div class="loading-inner">
+      <div class="loading-title" id="loadingTitle">PREPARANDO O DROP</div>
 
-    <body>
-        <div class="main-container">
-            <div class="carousel-section">
-                <div class="carousel-container">
-                    <button class="nav-arrow up">
-                        <img src="./img/top.png" alt="Up">
-                    </button>
+      <div class="loading-bar">
+        <div class="loading-fill" id="loadingFill"></div>
+      </div>
 
-                    <div class="carousel-track">
-                        <div class="card" data-index="0">
-                            <img src="./img/Gauntlet.jpg"
-                                alt="Phase 1">
-                        </div>
+      <div class="loading-row">
+        <div class="loading-sub" id="loadingSub">Carregando palco…</div>
+        <div class="loading-pct"><span id="loadingPct">0</span>%</div>
+      </div>
 
-                        <div class="card" data-index="1">
-                            <img src="./img/Avengers.jpg"
-                                alt="Phase 2">
-                        </div>
+      <div class="loading-hint" id="loadingHint">Aguarde • Experiência em tela cheia</div>
+    </div>
+  </div>
 
-                        <div class="card" data-index="2">
-                            <img src="./img/Proud.jpg"
-                                alt="Phase 3">
-                        </div>
+  <div class="wrap">
+    <div class="panel" id="bloqueado">
+      <h1 id="headline">CONTAGEM REGRESSIVA</h1>
+      <div class="subtitle" id="subtitle">
+        Libera em <b id="releaseText">23/12/2025 • 20:00</b>
+      </div>
 
-                        <div class="card" data-index="3">
-                            <img src="./img/Next.jpg"
-                                alt="Phase 4">
-                        </div>
-
-                        <div class="card" data-index="4">
-                            <img src="./img/Guacamole.jpg"
-                                alt="Phase 5">
-                        </div>
-                    </div>
-                    
-                    <button class="nav-arrow down">
-                        <img src="./img/down.png"
-                            alt="Down">
-                    </button>
-                </div>
-            </div>
-
-            <div class="controls-section">
-                <div class="nav-controls">
-                    <button class="nav-arrow up">
-                        <img src="https://ik.imagekit.io/gopichakradhar/icons/top.png?updatedAt=1754290522765" alt="Up">
-                    </button>
-                    <button class="nav-arrow down">
-                        <img src="https://ik.imagekit.io/gopichakradhar/icons/down.png?updatedAt=1754290523249"
-                            alt="Down">
-                    </button>
-                </div>
-
-                <div class="member-info">
-                    <h2 class="member-name">Denilson</h2>
-                    <p class="member-role">Te amo</p>
-                </div>
-
-                <div class="dots">
-                    <div class="dot active" data-index="0"></div>
-                    <div class="dot" data-index="1"></div>
-                    <div class="dot" data-index="2"></div>
-                    <div class="dot" data-index="3"></div>
-                    <div class="dot" data-index="4"></div>
-                </div>
-            </div>
+      <div class="timer">
+        <div class="block">
+          <div class="num" id="dias">00</div>
+          <div class="lab">DIAS</div>
         </div>
+        <div class="block">
+          <div class="num pink" id="horas">00</div>
+          <div class="lab">HORAS</div>
+        </div>
+        <div class="block">
+          <div class="num" id="minutos">00</div>
+          <div class="lab">MINUTOS</div>
+        </div>
+        <div class="block">
+          <div class="num pink" id="segundos">00</div>
+          <div class="lab">SEGUNDOS</div>
+        </div>
+      </div>
 
-        <script src="./script.js"></script>
-    </body>
+      <div class="footer" id="status">Horário do dispositivo</div>
+    </div>
+  </div>
 
-    </html>
-
+  <script src="script.js"></script>
 </body>
-
 </html>

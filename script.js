@@ -1,196 +1,212 @@
-const teamMembers = [
-	{ name: "Infinity Love", role: "Phase 1" },
-	{ name: "Lovers", role: "Phase 2" },
-	{ name: "Proud", role: "Phase 3" },
-	{ name: "Angels", role: "Phase 4" },
-	{ name: "Eleven", role: "Phase 5" },
-];
+(() => {
+  // ===== CONFIG FÁCIL =====
+  const CONFIG = {
+    nomeProjeto: "PREPARANDO O DROP", // texto do loading
+    ano: 2025,
+    mes: 12,
+    dia: 22,
+    hora: 19,
+    minuto: 35,
+    segundo: 0,
+    redirectPara: window.location.origin + "/phases",
+  };
 
-const cards = document.querySelectorAll(".card");
-const dots = document.querySelectorAll(".dot");
-const memberName = document.querySelector(".member-name");
-const memberRole = document.querySelector(".member-role");
-const upArrows = document.querySelectorAll(".nav-arrow.up");
-const downArrows = document.querySelectorAll(".nav-arrow.down");
-let currentIndex = 0;
-let isAnimating = false;
+  const liberarEm = new Date(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo);
 
-document.addEventListener("DOMContentLoaded", () => {
+  const el = (id) => document.getElementById(id);
+  const pad2 = (n) => String(n).padStart(2, "0");
 
-    const soundUp = new Audio("./sounds/up.mp3");
-    const soundDown = new Audio("./sounds/down.mp3");
+  let ctx = null;
+  let lastSec = null;
+  let done = false;
+  let interval = null;
 
-	soundUp.volume = 0.25;   
-    soundDown.volume = 0.25;
+  function ensureAudio() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
 
-    let isLocked = false;
-    const CLICK_DELAY = 800; // ms (ajuste aqui)
+  function beep(freq = 880, dur = 0.07, gain = 0.18) {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(freq, t);
 
-    document.querySelectorAll(".nav-arrow").forEach(button => {
-        button.addEventListener("click", () => {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-            if (isLocked) return;
+    o.connect(g);
+    g.connect(ctx.destination);
 
-            isLocked = true;
+    o.start(t);
+    o.stop(t + dur + 0.03);
+  }
 
-            const sound = button.classList.contains("up") ? soundUp : soundDown;
-            sound.currentTime = 0;
-            sound.play();
+  // “kick/snare” fake (bem show) usando 2 tons curtos
+  function kick() { beep(90, 0.06, 0.22); }
+  function snare(){ beep(1800, 0.03, 0.08); }
 
-            setTimeout(() => {
-                isLocked = false;
-            }, CLICK_DELAY);
-        });
-    });
+  function pulseBarBeat() {
+    const fill = el("loadingFill");
+    if (!fill) return;
+    fill.classList.remove("beat");
+    void fill.offsetWidth;
+    fill.classList.add("beat");
+  }
 
-});
+  function enableAudioOnce() {
+    try {
+      ensureAudio();
+      if (ctx.state === "suspended") ctx.resume();
+      beep(660, 0.05, 0.10);
+    } catch {}
+  }
 
-function updateCarousel(newIndex) {
-	if (isAnimating) return;
-	isAnimating = true;
+  window.addEventListener("pointerdown", enableAudioOnce, { once: true });
+  window.addEventListener("keydown", enableAudioOnce, { once: true });
 
-	currentIndex = (newIndex + cards.length) % cards.length;
+  function setText(id, v) {
+    const n = el(id);
+    if (n) n.textContent = v;
+  }
 
-	cards.forEach((card, i) => {
-		const offset = (i - currentIndex + cards.length) % cards.length;
+  // Atualiza textos do projeto
+  setText("loadingTitle", CONFIG.nomeProjeto);
 
-		card.classList.remove(
-			"center",
-			"up-1",
-			"up-2",
-			"down-1",
-			"down-2",
-			"hidden"
-		);
+  function update() {
+    if (done) return;
 
-		if (offset === 0) {
-			card.classList.add("center");
-		} else if (offset === 1) {
-			card.classList.add("down-1");
-		} else if (offset === 2) {
-			card.classList.add("down-2");
-		} else if (offset === cards.length - 1) {
-			card.classList.add("up-1");
-		} else if (offset === cards.length - 2) {
-			card.classList.add("up-2");
-		} else {
-			card.classList.add("hidden");
-		}
-	});
+    const diffMs = liberarEm - new Date();
 
-	dots.forEach((dot, i) => {
-		dot.classList.toggle("active", i === currentIndex);
-	});
+    // glitch últimos 3s
+    document.documentElement.classList.toggle("glitching", diffMs <= 3000 && diffMs > 0);
 
-	memberName.style.opacity = "0";
-	memberRole.style.opacity = "0";
+    // tensão últimos 10s + beep por segundo
+    const final10 = diffMs <= 10000 && diffMs > 0;
+    document.documentElement.classList.toggle("final-phase", final10);
 
-	setTimeout(() => {
-		memberName.textContent = teamMembers[currentIndex].name;
-		memberRole.textContent = teamMembers[currentIndex].role;
-		memberName.style.opacity = "1";
-		memberRole.style.opacity = "1";
-	}, 300);
+    if (diffMs <= 0) {
+      release();
+      return;
+    }
 
-	setTimeout(() => {
-		isAnimating = false;
-	}, 800);
-}
+    const total = Math.floor(diffMs / 1000);
+    const dias = Math.floor(total / 86400);
+    const horas = Math.floor((total % 86400) / 3600);
+    const minutos = Math.floor((total % 3600) / 60);
+    const segundos = total % 60;
 
-upArrows.forEach(arrow => {
-	arrow.addEventListener("click", () => {
-		updateCarousel(currentIndex - 1);
-	});
-});
+    setText("dias", pad2(dias));
+    setText("horas", pad2(horas));
+    setText("minutos", pad2(minutos));
+    setText("segundos", pad2(segundos));
 
-downArrows.forEach(arrow => {
-	arrow.addEventListener("click", () => {
-		updateCarousel(currentIndex + 1);
-	});
-});
+    if (final10) {
+      const sec = Math.floor(diffMs / 1000);
+      if (sec !== lastSec) {
+        lastSec = sec;
 
-dots.forEach((dot, i) => {
-	dot.addEventListener("click", () => {
-		updateCarousel(i);
-	});
-});
+        ensureAudio();
+        // batida por segundo: kick
+        kick();
+        pulseBarBeat();
 
-cards.forEach((card, i) => {
-	card.addEventListener("click", () => {
-		updateCarousel(i);
-	});
-});
+        // últimos 3s: snare + tone
+        if (sec <= 3) {
+          setTimeout(() => snare(), 60);
+          setTimeout(() => beep(1320, 0.06, 0.12), 90);
+        }
+      }
+    } else {
+      lastSec = null;
+    }
+  }
 
-document.addEventListener("keydown", (e) => {
-	if (e.key === "ArrowUp") {
-		updateCarousel(currentIndex - 1);
-	} else if (e.key === "ArrowDown") {
-		updateCarousel(currentIndex + 1);
-	}
-});
+  function release() {
+    if (done) return;
+    done = true;
+    if (interval) clearInterval(interval);
 
-let touchStartX = 0;
-let touchEndX = 0;
-let scrollTimeout;
-let isScrolling = false;
+    document.documentElement.classList.remove("final-phase", "glitching");
 
-// Scroll event listener
-//if u wnat u can timer to disappear that bottom right scroll button - by gopi
-	
-	
+    // loading on
+    const loading = el("loading");
+    const fill = el("loadingFill");
+    const pct = el("loadingPct");
+    const sub = el("loadingSub");
 
-// Add scroll indicator
-function createScrollIndicator() {
-	const indicator = document.createElement('div');
-	indicator.className = 'scroll-indicator';
-	indicator.innerHTML = 'scroll';
-	document.body.appendChild(indicator);
-}
+    if (loading) loading.classList.add("on");
+    if (fill) fill.style.width = "0%";
+    if (pct) pct.textContent = "0";
 
-// Initialize scroll indicator
-createScrollIndicator();
+    // sequência de “show”
+    ensureAudio();
+    kick(); pulseBarBeat();
+    setTimeout(() => { kick(); pulseBarBeat(); }, 140);
+    setTimeout(() => { snare(); pulseBarBeat(); }, 260);
 
-document.addEventListener("touchstart", (e) => {
-	touchStartX = e.changedTouches[0].screenY;
-});
+    const steps = [
+      { p: 18, t: "Aquecendo luzes…" },
+      { p: 38, t: "Sincronizando telão…" },
+      { p: 57, t: "Carregando experiência…" },
+      { p: 74, t: "Preparando o drop…" },
+      { p: 88, t: "Finalizando…" },
+      { p: 100, t: "Abrindo…" },
+    ];
 
-document.addEventListener("touchend", (e) => {
-	touchEndX = e.changedTouches[0].screenY;
-	handleSwipe();
-});
+    let i = 0;
+    let current = 0;
 
-function handleSwipe() {
-	const swipeThreshold = 50;
-	const diff = touchStartX - touchEndX;
+    const progTimer = setInterval(() => {
+      if (!fill || !pct) return;
 
-	if (Math.abs(diff) > swipeThreshold) {
-		if (diff > 0) {
-			updateCarousel(currentIndex + 1);
-		} else {
-			updateCarousel(currentIndex - 1);
-		}
-	}
-}
+      const target = steps[Math.min(i, steps.length - 1)].p;
 
-updateCarousel(0);
+      current += Math.max(0.7, (target - current) * 0.075);
+      if (current > target) current = target;
 
-const caminhos = {
-    0: './phase1/index.html',
-    1: './phase2/index.html',
-    2: './phase3/index.html',
-    3: './phase4/index.html',
-    4: './phase5/index.html'
-};
+      fill.style.width = current.toFixed(1) + "%";
+      pct.textContent = String(Math.floor(current));
 
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', (e) => {
-        e.stopPropagation(); // evita conflito com o carousel
+      // batida visual a cada ~7%
+      if (Math.floor(current) % 7 === 0) pulseBarBeat();
 
-        const index = card.dataset.index;
-        const destino = caminhos[index];
+      if (Math.abs(current - target) < 1.2 && i < steps.length) {
+        if (sub) sub.textContent = steps[i].t;
+        // “beat” de confirmação em cada etapa
+        kick(); pulseBarBeat();
+        i++;
+      }
 
-        if (!destino) return;
+      if (current >= 99.3) {
+        clearInterval(progTimer);
 
-        window.location.href = destino;
-    });
-});
+        const flash = el("flash");
+        if (flash) {
+          flash.classList.add("on");
+          setTimeout(() => flash.classList.remove("on"), 260);
+        }
+
+        // “drop” final
+        snare();
+        setTimeout(() => beep(1760, 0.22, 0.18), 60);
+
+        document.body.classList.add("page-exit");
+        setTimeout(() => {
+          window.location.replace(CONFIG.redirectPara);
+        }, 650);
+      }
+    }, 45);
+  }
+
+  update();
+  interval = setInterval(update, 250);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) update();
+  });
+
+  window.__COUNTDOWN__ = { CONFIG, liberarEm, forceRelease: release };
+})();
