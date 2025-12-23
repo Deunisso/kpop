@@ -12,38 +12,57 @@ const memberName = document.querySelector(".member-name");
 const memberRole = document.querySelector(".member-role");
 const upArrows = document.querySelectorAll(".nav-arrow.up");
 const downArrows = document.querySelectorAll(".nav-arrow.down");
+
 let currentIndex = 0;
 let isAnimating = false;
 
-document.addEventListener("DOMContentLoaded", () => {
+// ====== ÁUDIO (um lugar só) ======
+const soundUp = new Audio("../sounds/up.mp3");
+const soundDown = new Audio("../sounds/down.mp3");
 
-    const soundUp = new Audio("./sounds/up.mp3");
-    const soundDown = new Audio("./sounds/down.mp3");
+soundUp.volume = 0.5;
+soundDown.volume = 0.5;
 
-	soundUp.volume = 0.25;   
-    soundDown.volume = 0.25;
+// iOS/Safari: destrava áudio no primeiro toque/click
+let audioUnlocked = false;
+function unlockAudioOnce() {
+	if (audioUnlocked) return;
+	audioUnlocked = true;
 
-    let isLocked = false;
-    const CLICK_DELAY = 800; // ms (ajuste aqui)
+	soundUp.play()
+		.then(() => {
+			soundUp.pause();
+			soundUp.currentTime = 0;
+		})
+		.catch(() => {});
 
-    document.querySelectorAll(".nav-arrow").forEach(button => {
-        button.addEventListener("click", () => {
+	soundDown.play()
+		.then(() => {
+			soundDown.pause();
+			soundDown.currentTime = 0;
+		})
+		.catch(() => {});
+}
 
-            if (isLocked) return;
+document.addEventListener("touchstart", unlockAudioOnce, { once: true });
+document.addEventListener("click", unlockAudioOnce, { once: true });
 
-            isLocked = true;
+// throttle do som (evita spam)
+let soundLocked = false;
+const SOUND_DELAY = 250; // ms (ajuste aqui)
 
-            const sound = button.classList.contains("up") ? soundUp : soundDown;
-            sound.currentTime = 0;
-            sound.play();
+function playNavSound(direction /* "up" | "down" */) {
+	if (soundLocked) return;
+	soundLocked = true;
 
-            setTimeout(() => {
-                isLocked = false;
-            }, CLICK_DELAY);
-        });
-    });
+	const s = direction === "up" ? soundUp : soundDown;
+	s.currentTime = 0;
+	s.play().catch(() => {});
 
-});
+	setTimeout(() => {
+		soundLocked = false;
+	}, SOUND_DELAY);
+}
 
 function updateCarousel(newIndex) {
 	if (isAnimating) return;
@@ -97,57 +116,57 @@ function updateCarousel(newIndex) {
 	}, 800);
 }
 
-upArrows.forEach(arrow => {
+// ====== NAVEGAÇÃO (setas com som) ======
+upArrows.forEach((arrow) => {
 	arrow.addEventListener("click", () => {
+		playNavSound("up");
 		updateCarousel(currentIndex - 1);
 	});
 });
 
-downArrows.forEach(arrow => {
+downArrows.forEach((arrow) => {
 	arrow.addEventListener("click", () => {
+		playNavSound("down");
 		updateCarousel(currentIndex + 1);
 	});
 });
 
+// ====== DOTS ======
 dots.forEach((dot, i) => {
 	dot.addEventListener("click", () => {
 		updateCarousel(i);
 	});
 });
 
+// ====== CLICK NO CARD (apenas carousel) ======
 cards.forEach((card, i) => {
 	card.addEventListener("click", () => {
 		updateCarousel(i);
 	});
 });
 
+// ====== TECLADO ======
 document.addEventListener("keydown", (e) => {
 	if (e.key === "ArrowUp") {
+		playNavSound("up");
 		updateCarousel(currentIndex - 1);
 	} else if (e.key === "ArrowDown") {
+		playNavSound("down");
 		updateCarousel(currentIndex + 1);
 	}
 });
 
+// ====== SWIPE (touch) ======
 let touchStartX = 0;
 let touchEndX = 0;
-let scrollTimeout;
-let isScrolling = false;
-
-// Scroll event listener
-//if u wnat u can timer to disappear that bottom right scroll button - by gopi
-	
-	
 
 // Add scroll indicator
 function createScrollIndicator() {
-	const indicator = document.createElement('div');
-	indicator.className = 'scroll-indicator';
-	indicator.innerHTML = 'scroll';
+	const indicator = document.createElement("div");
+	indicator.className = "scroll-indicator";
+	indicator.innerHTML = "scroll";
 	document.body.appendChild(indicator);
 }
-
-// Initialize scroll indicator
 createScrollIndicator();
 
 document.addEventListener("touchstart", (e) => {
@@ -165,8 +184,12 @@ function handleSwipe() {
 
 	if (Math.abs(diff) > swipeThreshold) {
 		if (diff > 0) {
+			// swipe pra cima -> próximo
+			playNavSound("down");
 			updateCarousel(currentIndex + 1);
 		} else {
+			// swipe pra baixo -> anterior
+			playNavSound("up");
 			updateCarousel(currentIndex - 1);
 		}
 	}
@@ -174,23 +197,24 @@ function handleSwipe() {
 
 updateCarousel(0);
 
+// ====== LINKS POR CARD (navegação para páginas) ======
 const caminhos = {
-    0: './phase1/index.html',
-    1: './phase2/index.html',
-    2: './phase3/index.html',
-    3: './phase4/index.html',
-    4: './phase5/index.html'
+	0: "../phase1/index.html",
+	1: "../phase2/index.html",
+	2: "../phase3/index.html",
+	3: "../phase4/index.html",
+	4: "../phase5/index.html",
 };
 
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', (e) => {
-        e.stopPropagation(); // evita conflito com o carousel
+document.querySelectorAll(".card").forEach((card) => {
+	card.addEventListener("click", (e) => {
+		e.stopPropagation(); // evita conflito com o carousel
 
-        const index = card.dataset.index;
-        const destino = caminhos[index];
+		const index = card.dataset.index;
+		const destino = caminhos[index];
 
-        if (!destino) return;
+		if (!destino) return;
 
-        window.location.href = destino;
-    });
+		window.location.href = destino;
+	});
 });

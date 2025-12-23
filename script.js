@@ -1,17 +1,25 @@
 (() => {
   // ===== CONFIG FÁCIL =====
   const CONFIG = {
-    nomeProjeto: "PREPARANDO O DROP", // texto do loading
+    nomeProjeto: "PREPARANDO O DROP",
     ano: 2025,
     mes: 12,
     dia: 22,
-    hora: 19,
-    minuto: 35,
+
+    hora: 21,
+    minuto: 30,
     segundo: 0,
     redirectPara: new URL("../phases/index.html", window.location.href).toString(),
   };
 
-  const liberarEm = new Date(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo);
+  const liberarEm = new Date(
+    CONFIG.ano,
+    CONFIG.mes - 1,
+    CONFIG.dia,
+    CONFIG.hora,
+    CONFIG.minuto,
+    CONFIG.segundo
+  );
 
   const el = (id) => document.getElementById(id);
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -30,6 +38,7 @@
     const t = ctx.currentTime;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
+
     o.type = "sine";
     o.frequency.setValueAtTime(freq, t);
 
@@ -44,7 +53,6 @@
     o.stop(t + dur + 0.03);
   }
 
-  // “kick/snare” fake (bem show) usando 2 tons curtos
   function kick() { beep(90, 0.06, 0.22); }
   function snare(){ beep(1800, 0.03, 0.08); }
 
@@ -64,6 +72,39 @@
     } catch {}
   }
 
+  // ===== BOTÃO OK pra liberar áudio =====
+  function setupAudioGate() {
+    const audioGate = el("audioGate");
+    const audioOk = el("audioOk");
+    if (!audioGate || !audioOk) return;
+
+    function hideGate() {
+      audioGate.classList.add("hide");
+      setTimeout(() => {
+        audioGate.style.display = "none";
+      }, 360);
+    }
+
+    function enableAudioFromGate() {
+      enableAudioOnce();
+      hideGate();
+    }
+
+    audioOk.addEventListener("click", enableAudioFromGate);
+    audioOk.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      enableAudioFromGate();
+    });
+
+    // Enter também ativa
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && audioGate.style.display !== "none") {
+        enableAudioFromGate();
+      }
+    });
+  }
+
+  // fallback: se o usuário tocar em qualquer lugar antes do OK
   window.addEventListener("pointerdown", enableAudioOnce, { once: true });
   window.addEventListener("keydown", enableAudioOnce, { once: true });
 
@@ -109,11 +150,9 @@
         lastSec = sec;
 
         ensureAudio();
-        // batida por segundo: kick
         kick();
         pulseBarBeat();
 
-        // últimos 3s: snare + tone
         if (sec <= 3) {
           setTimeout(() => snare(), 60);
           setTimeout(() => beep(1320, 0.06, 0.12), 90);
@@ -131,7 +170,6 @@
 
     document.documentElement.classList.remove("final-phase", "glitching");
 
-    // loading on
     const loading = el("loading");
     const fill = el("loadingFill");
     const pct = el("loadingPct");
@@ -141,7 +179,6 @@
     if (fill) fill.style.width = "0%";
     if (pct) pct.textContent = "0";
 
-    // sequência de “show”
     ensureAudio();
     kick(); pulseBarBeat();
     setTimeout(() => { kick(); pulseBarBeat(); }, 140);
@@ -170,12 +207,10 @@
       fill.style.width = current.toFixed(1) + "%";
       pct.textContent = String(Math.floor(current));
 
-      // batida visual a cada ~7%
       if (Math.floor(current) % 7 === 0) pulseBarBeat();
 
       if (Math.abs(current - target) < 1.2 && i < steps.length) {
         if (sub) sub.textContent = steps[i].t;
-        // “beat” de confirmação em cada etapa
         kick(); pulseBarBeat();
         i++;
       }
@@ -189,7 +224,6 @@
           setTimeout(() => flash.classList.remove("on"), 260);
         }
 
-        // “drop” final
         snare();
         setTimeout(() => beep(1760, 0.22, 0.18), 60);
 
@@ -201,6 +235,8 @@
     }, 45);
   }
 
+  // ===== init =====
+  setupAudioGate();
   update();
   interval = setInterval(update, 250);
 
