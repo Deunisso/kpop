@@ -37,9 +37,7 @@ body {
     width: 380px;
     padding: 25px 30px;
     position: relative;
-
     overflow: hidden;
-
     border-radius: 16px;
     background-color: #CBC3E3;
     box-shadow: 0px 6px 15px var(--light-shadow);
@@ -74,7 +72,6 @@ body {
 .img-area {
     width: 100%;
     height: 256px;
-
     margin-top: 25px;
     overflow: hidden;
     border-radius: 15px;
@@ -84,7 +81,6 @@ body {
 .img-area img {
     width: 100%;
     height: 100%;
-
     object-fit: cover;
 }
 
@@ -107,7 +103,6 @@ body {
 .progress-area {
     width: 100%;
     height: 6px;
-
     background: #e6e6e6;
     border-radius: 50px;
     cursor: pointer;
@@ -179,7 +174,6 @@ body {
 .controls .play-pause {
     width: 54px;
     height: 54px;
-
     background: linear-gradient(var(--white-color) 0%, var(--dark-white) 100%);
     box-shadow: 0px 0px 5px var(--main-color);
     border-radius: 50%;
@@ -191,7 +185,6 @@ body {
 .play-pause::before {
     width: 40px;
     height: 40px;
-
     content: "";
     position: absolute;
     border-radius: inherit;
@@ -201,10 +194,8 @@ body {
 .play-pause i {
     width: 40px;
     height: 40px;
-
     line-height: 40px;
     text-align: center;
-
     position: relative;
     background: inherit;
     border-radius: inherit;
@@ -401,6 +392,7 @@ ul li.playing {
     color: var(--white-mode);
 }
 
+/* Lyrics */
 .lyrics-box{
   margin-top: 14px;
   padding: 12px;
@@ -504,4 +496,47 @@ ul li.playing {
     margin: 0 auto;
     font-size: 18px;
     color: var(--light-black);
+}
+
+/* =================================================
+   🔒 BLOQUEIO TOTAL DA PÁGINA (TELA PRETA)
+   ================================================= */
+#page-lock{
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+
+#page-lock .lock-inner{
+  text-align: center;
+  padding: 24px;
+}
+
+#page-lock .lock-text{
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  opacity: .9;
+  text-shadow: 0 4px 20px rgba(0,0,0,.8);
+}
+
+/* opcional: subtítulo (se usar no JS) */
+#page-lock .lock-sub{
+  margin-top: 14px;
+  color: rgba(255,255,255,.75);
+  font-size: 1rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px){
+  #page-lock .lock-text{ font-size: 1.6rem; }
+  #page-lock .lock-sub{ font-size: .9rem; }
 }
