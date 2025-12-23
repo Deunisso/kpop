@@ -1,218 +1,42 @@
-// ===============================
-// PRELOAD REAL (BARRA POR ARQUIVO)
-// ===============================
-
-// ⏱️ helper de delay forçado (OBRIGATÓRIO)
-const wait = (ms) => new Promise(res => setTimeout(res, ms));
-
-function isImage(url) {
-  return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
-}
-function isAudio(url) {
-  return /\.(mp3|wav|ogg|m4a)$/i.test(url);
-}
-
-async function preloadOne(url) {
-  // 🚫 BLOQUEIO TOTAL: nada carrega antes do timer zerar
-  if (!allowPreload) return;
-
-  if (isImage(url)) {
-    await new Promise((res, rej) => {
-      const img = new Image();
-      img.onload = () => res(true);
-      img.onerror = () => rej(new Error("img fail " + url));
-      img.src = url;
-    });
-    return;
-  }
-
-  if (isAudio(url)) {
-    await new Promise((res, rej) => {
-      const a = new Audio();
-      a.preload = "auto";
-      a.oncanplaythrough = () => res(true);
-      a.onerror = () => rej(new Error("audio fail " + url));
-      a.src = url;
-      a.load();
-    });
-    return;
-  }
-
-  const r = await fetch(url, { cache: "no-store" });
-  if (!r.ok) throw new Error("fetch fail " + url);
-  await r.arrayBuffer();
-}
-
-async function preloadAssets(onProgress) {
-  const list = Array.isArray(CONFIG.assets) ? CONFIG.assets : [];
-  const total = Math.max(1, list.length);
-  let doneCount = 0;
-
-  for (const url of list) {
-    let ok = true;
-
-    try {
-      await preloadOne(url);
-    } catch (e) {
-      ok = false;
-      console.warn(e);
-    }
-
-    doneCount++;
-
-    if (typeof onProgress === "function") {
-      onProgress({
-        done: doneCount,
-        total,
-        url,
-        ok
-      });
-    }
-
-    // ⏱️ DELAY FORÇADO POR ARQUIVO
-    await wait(300); // ← 300 = 0,3s | 1000 = 1s
-  }
-}
-
-function dropFX(durationMs = 1200) {
-  const flash = document.getElementById("flash");
-  if (!flash) return;
-
-  flash.classList.add("on");
-  setTimeout(() => {
-    flash.classList.remove("on");
-  }, durationMs);
-}
-
 (() => {
-  // ===== CONFIG =====
+  // =========================================================
+  // 1) CONFIG + ESTADO PRINCIPAL
+  // =========================================================
+  let allowPreload = false;
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+
   const CONFIG = {
     nomeProjeto: "PREPARANDO O DROP",
-
-    // data/hora do zero
     ano: 2025,
     mes: 12,
     dia: 23,
-    hora: 20,
-    minuto: 0,
+    hora: 18,
+    minuto: 55,
     segundo: 0,
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
 
-    // ===== MUSICA =====
+    // ===== MÚSICA (antes dos 60s finais) =====
     musicaSrc: "./sounds/intro.mp3",
     musicaVolume: 0.9,
     musicaComecarEm: 0,
-
-    // NUNCA toca música se faltar <= 60s (ou se já zerou)
     blockMusicUnderMs: 60000,
     fadeStopMs: 1200,
 
-    // ===== ASSETS PRA PRÉ-CARREGAR (você vai me mandar e eu monto) =====
-    // IMPORTANTE: esses caminhos devem ser acessíveis via HTTP no seu site.
-    assets: [
-      // exemplos (substitua pelo seu "manifest")
-      "./img/Avengers.jpg",
-      "./img/Back.jpg",
-      "./img/Dancing.gif",
-      "./img/down.png",
-      "./img/favicon.png",
-      "./img/Gauntlet.jpg",
-      "./img/Guacamole.jpg",
-      "./img/Next.jpg",
-      "./img/Proud.jpg",
-      "./img/top.png",
+    // ===== CORAÇÃO (nos 60s finais) =====
+    heartSrc: "./sounds/heartbeat.mp3",
+    heartVolume: 0.9,
+    heartMinRate: 1.0,     // 60s → 21s
+    heartMaxRate: 1.6,     // 0s
+    heartRampStartSec: 20, // começa acelerar faltando 20s
 
-      "./phase1/music/Black.mp3",
-      "./phase1/music/Blue.mp3",
-      "./phase1/music/Gauntlet.mp3",
-      "./phase1/music/Green.mp3",
-      "./phase1/music/Orange.mp3",
-      "./phase1/music/Purple.mp3",
-      "./phase1/music/Red.mp3",
-      "./phase1/music/Yellow.mp3",
+    // ===== LOADING (durante preload) =====
+    loadingSrc: "./sounds/loading.mp3",
+    loadingVolume: 0.75,
 
-      "./phase1/img/Black.jpg",
-      "./phase1/img/Blue.jpg",
-      "./phase1/img/Gauntlet.jpg",
-      "./phase1/img/Green.jpg",
-      "./phase1/img/Orange.jpg",
-      "./phase1/img/Purple.jpg",
-      "./phase1/img/Red.jpg",
-      "./phase1/img/Yellow.jpg",
-
-      "./phase2/music/AngryV2.mp3",
-      "./phase2/music/Armor.mp3",
-      "./phase2/music/Avengers.mp3",
-      "./phase2/music/Explicit.mp3",
-      "./phase2/music/Magic.mp3",
-      "./phase2/music/ResponsibilitiesV2.mp3",
-      "./phase2/music/Shield.mp3",
-      "./phase2/music/ThunderV2.mp3",
-
-      "./phase2/img/AngryV2.jpg",
-      "./phase2/img/Armor.jpg",
-      "./phase2/img/Avengers.jpg",
-      "./phase2/img/Explicit.jpg",
-      "./phase2/img/Magic.jpg",
-      "./phase2/img/ResponsibilitiesV2.jpg",
-      "./phase2/img/Shield.jpg",
-      "./phase2/img/ThunderV2.jpg",
-
-      "./phase3/music/Card.mp3",
-      "./phase3/music/Colgate.mp3",
-      "./phase3/music/Miss.mp3",
-      "./phase3/music/New.mp3",
-      "./phase3/music/Percy.mp3",
-      "./phase3/music/Proud.mp3",
-      "./phase3/music/Santa.mp3",
-      "./phase3/music/Walking.mp3",
-
-      "./phase3/img/Card.jpg",
-      "./phase3/img/Colgate.jpg",
-      "./phase3/img/Miss.jpg",
-      "./phase3/img/New.jpg",
-      "./phase3/img/Percy.jpg",
-      "./phase3/img/Proud.jpg",
-      "./phase3/img/Santa.jpg",
-      "./phase3/img/Walking.jpg",
-
-      "./phase4/music/Bath.mp3",
-      "./phase4/music/Cruzeiro.mp3",
-      "./phase4/music/Dan.mp3",
-      "./phase4/music/IlhaBela.mp3",
-      "./phase4/music/Next.mp3",
-      "./phase4/music/Re.mp3",
-      "./phase4/music/RollerSkates.mp3",
-      "./phase4/music/Vo.mp3",
-
-      "./phase4/img/Bath.jpg",
-      "./phase4/img/Cruzeiro.jpg",
-      "./phase4/img/Dan.jpg",
-      "./phase4/img/IlhaBela.jpg",
-      "./phase4/img/Next.jpg",
-      "./phase4/img/Re.jpg",
-      "./phase4/img/RollerSkates.jpg",
-      "./phase4/img/Vo.jpg",
-
-      "./phase5/music/Collide.mp3",
-      "./phase5/music/Dama.mp3",
-      "./phase5/music/Fire.mp3",
-      "./phase5/music/Guacamole.mp3",
-      "./phase5/music/Lights.mp3",
-      "./phase5/music/Okay.mp3",
-      "./phase5/music/Tayara.mp3",
-      "./phase5/music/Unfiltered.mp3",
-
-      "./phase5/img/Collide.jpg",
-      "./phase5/img/Dama.jpg",
-      "./phase5/img/Fire.jpg",
-      "./phase5/img/Guacamole.jpg",
-      "./phase5/img/Lights.jpg",
-      "./phase5/img/Okay.jpg",
-      "./phase5/img/Tayara.jpg",
-      "./phase5/img/Unfiltered.jpg",     
-    ],
+    // ===== PRELOAD =====
+    perFileDelayMs: 300,
+    assets: window.ASSETS_MANIFEST || []
   };
 
   const liberarEm = new Date(
@@ -227,155 +51,32 @@ function dropFX(durationMs = 1200) {
   const el = (id) => document.getElementById(id);
   const pad2 = (n) => String(n).padStart(2, "0");
 
-  let ctx = null;
-  let lastSec = null;
   let done = false;
   let interval = null;
 
-  // se já viu o timer positivo (abriu antes de zerar), então quando zerar "ao vivo" mostra loading
   let seenPositive = false;
   let releasing = false;
+  let tension60 = false;
 
-  // ===============================
-  // AUDIO: MÚSICA (intro)
-  // ===============================
-  const introMusic = new Audio(CONFIG.musicaSrc);
-  introMusic.preload = "auto";
-  introMusic.volume = CONFIG.musicaVolume;
+  function setText(id, v) {
+    const n = el(id);
+    if (n) n.textContent = v;
+  }
 
   function remainingMs() {
     return liberarEm - new Date();
   }
 
-  function isMusicAllowedNow() {
-    const ms = remainingMs();
-    return ms > CONFIG.blockMusicUnderMs; // só toca se faltar MAIS de 60s
-  }
+  setText("loadingTitle", CONFIG.nomeProjeto);
 
-  function safePlayIntro() {
-    // BLOQUEIO ABSOLUTO
-    if (!isMusicAllowedNow()) return;
-    try {
-      introMusic.currentTime = CONFIG.musicaComecarEm || 0;
-      introMusic.volume = CONFIG.musicaVolume;
-      const p = introMusic.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-    } catch {}
-  }
-
-  function stopIntroNow() {
-    try {
-      introMusic.pause();
-      introMusic.currentTime = 0;
-      introMusic.volume = CONFIG.musicaVolume;
-    } catch {}
-  }
-
-  function fadeOutStopIntro(ms = 1200) {
-    try {
-      if (introMusic.paused) return;
-      const startVol = introMusic.volume;
-      const steps = 30;
-      let i = 0;
-
-      const t = setInterval(() => {
-        i++;
-        const k = 1 - i / steps;
-        const eased = k * k; // suave
-        introMusic.volume = Math.max(0, startVol * eased);
-
-        if (i >= steps) {
-          clearInterval(t);
-          stopIntroNow();
-        }
-      }, ms / steps);
-    } catch {}
-  }
-
-  // ===============================
-  // WEB AUDIO: SFX (tensão / loading)
-  // ===============================
-  function ensureAudio() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-
-  function beep(freq = 880, dur = 0.07, gain = 0.18) {
-    if (!ctx) return;
-    const t = ctx.currentTime;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-
-    o.type = "sine";
-    o.frequency.setValueAtTime(freq, t);
-
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-
-    o.connect(g);
-    g.connect(ctx.destination);
-
-    o.start(t);
-    o.stop(t + dur + 0.03);
-  }
-
-  function impact() {
-    if (!ctx) return;
-    const t = ctx.currentTime;
-
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-
-    o.type = "sine";
-    o.frequency.setValueAtTime(90, t);
-    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.22, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
-
-    o.connect(g);
-    g.connect(ctx.destination);
-
-    o.start(t);
-    o.stop(t + 0.18);
-
-    setTimeout(() => beep(2000, 0.015, 0.06), 0);
-  }
-
-  function riser(ms = 260) {
-    if (!ctx) return;
-    const t = ctx.currentTime;
-
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    const f = ctx.createBiquadFilter();
-
-    o.type = "sawtooth";
-    o.frequency.setValueAtTime(220, t);
-    o.frequency.exponentialRampToValueAtTime(2600, t + ms / 1000);
-
-    f.type = "highpass";
-    f.frequency.setValueAtTime(500, t);
-    f.frequency.exponentialRampToValueAtTime(3600, t + ms / 1000);
-
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.12, t + 0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
-
-    o.connect(f);
-    f.connect(g);
-    g.connect(ctx.destination);
-
-    o.start(t);
-    o.stop(t + ms / 1000 + 0.02);
-  }
-
-  function sparkle() {
-    if (!ctx) return;
-    beep(1320, 0.04, 0.10);
-    setTimeout(() => beep(1760, 0.04, 0.09), 60);
-    setTimeout(() => beep(2200, 0.045, 0.08), 120);
+  // =========================================================
+  // 2) VISUAL
+  // =========================================================
+  function dropFX(durationMs = 1200) {
+    const flash = el("flash");
+    if (!flash) return;
+    flash.classList.add("on");
+    setTimeout(() => flash.classList.remove("on"), durationMs);
   }
 
   function pulseBarBeat() {
@@ -386,17 +87,9 @@ function dropFX(durationMs = 1200) {
     fill.classList.add("beat");
   }
 
-  function enableAudioOnce() {
-    try {
-      ensureAudio();
-      if (ctx.state === "suspended") ctx.resume();
-      beep(660, 0.05, 0.10);
-    } catch {}
-  }
-
-  // ===============================
-  // PRELOAD REAL (BARRA POR ARQUIVO)
-  // ===============================
+  // =========================================================
+  // 3) PRELOAD
+  // =========================================================
   function isImage(url) {
     return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
   }
@@ -405,7 +98,6 @@ function dropFX(durationMs = 1200) {
   }
 
   async function preloadOne(url) {
-    // 🚫 BLOQUEIO TOTAL: nada carrega antes do timer zerar
     if (!allowPreload) return;
 
     if (isImage(url)) {
@@ -430,7 +122,7 @@ function dropFX(durationMs = 1200) {
       return;
     }
 
-    const r = await fetch(url, { cache: "no-store" });
+    const r = await fetch(url);
     if (!r.ok) throw new Error("fetch fail " + url);
     await r.arrayBuffer();
   }
@@ -442,7 +134,6 @@ function dropFX(durationMs = 1200) {
 
     for (const url of list) {
       let ok = true;
-
       try {
         await preloadOne(url);
       } catch (e) {
@@ -453,23 +144,100 @@ function dropFX(durationMs = 1200) {
       doneCount++;
 
       if (typeof onProgress === "function") {
-        onProgress({
-          done: doneCount,
-          total,
-          url,
-          ok
-        });
+        onProgress({ done: doneCount, total, url, ok });
       }
 
-      // ⏱️ DELAY FORÇADO POR ARQUIVO
-      await wait(300);
+      if (CONFIG.perFileDelayMs > 0) {
+        await wait(CONFIG.perFileDelayMs);
+      }
     }
   }
 
-  // ===============================
-  // AUDIO GATE (BOTÃO OK)
-  // HTML precisa: <button id="audioOk" ...>
-  // ===============================
+  // =========================================================
+  // 4) ÁUDIO (intro + heartbeat + loading)
+  // =========================================================
+  const introMusic = new Audio(CONFIG.musicaSrc);
+  introMusic.preload = "auto";
+  introMusic.volume = CONFIG.musicaVolume;
+
+  const heart = new Audio(CONFIG.heartSrc);
+  heart.preload = "auto";
+  heart.loop = true;
+  heart.volume = CONFIG.heartVolume;
+  heart.playbackRate = CONFIG.heartMinRate;
+
+  const loadingMusic = new Audio(CONFIG.loadingSrc);
+  loadingMusic.preload = "auto";
+  loadingMusic.loop = true;
+  loadingMusic.volume = CONFIG.loadingVolume;
+
+  function safePlay(a) {
+    try {
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {}
+  }
+
+  function stop(a) {
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch {}
+  }
+
+  function isMusicAllowedNow() {
+    return remainingMs() > CONFIG.blockMusicUnderMs;
+  }
+
+  function safePlayIntro() {
+    if (!isMusicAllowedNow()) return;
+    try {
+      introMusic.currentTime = CONFIG.musicaComecarEm || 0;
+      introMusic.volume = CONFIG.musicaVolume;
+      safePlay(introMusic);
+    } catch {}
+  }
+
+  function stopIntroNow() {
+    stop(introMusic);
+    try {
+      introMusic.volume = CONFIG.musicaVolume;
+    } catch {}
+  }
+
+  function fadeOutStopIntro(ms = 1200) {
+    try {
+      if (introMusic.paused) return;
+      const startVol = introMusic.volume;
+      const steps = 30;
+      let i = 0;
+
+      const t = setInterval(() => {
+        i++;
+        const k = 1 - i / steps;
+        const eased = k * k;
+        introMusic.volume = Math.max(0, startVol * eased);
+
+        if (i >= steps) {
+          clearInterval(t);
+          stopIntroNow();
+        }
+      }, ms / steps);
+    } catch {}
+  }
+
+  function stopAllAudio() {
+    stopIntroNow();
+    stop(heart);
+    stop(loadingMusic);
+    try {
+      heart.playbackRate = CONFIG.heartMinRate;
+    } catch {}
+  }
+
+  // =========================================================
+  // 5) AUDIO GATE (botão OK)
+  // =========================================================
   function setupAudioGate() {
     const audioGate = el("audioGate");
     const audioOk = el("audioOk");
@@ -477,20 +245,18 @@ function dropFX(durationMs = 1200) {
 
     function hideGate() {
       audioGate.classList.add("hide");
-      setTimeout(() => {
-        audioGate.style.display = "none";
-      }, 360);
+      setTimeout(() => (audioGate.style.display = "none"), 360);
     }
 
     function enableAudioFromGate() {
-      enableAudioOnce();
+      // libera autoplay por gesto do usuário
+      try {
+        safePlay(introMusic);
+        introMusic.pause();
+        introMusic.currentTime = 0;
+      } catch {}
 
-      // ✅ música só se faltar > 60s
       safePlayIntro();
-
-      riser(160);
-      setTimeout(() => sparkle(), 120);
-
       hideGate();
     }
 
@@ -501,30 +267,15 @@ function dropFX(durationMs = 1200) {
     });
 
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && audioGate.style.display !== "none") {
-        enableAudioFromGate();
-      }
+      if (e.key === "Enter" && audioGate.style.display !== "none") enableAudioFromGate();
     });
   }
 
-  // fallback pra liberar AudioContext
-  window.addEventListener("pointerdown", enableAudioOnce, { once: true });
-  window.addEventListener("keydown", enableAudioOnce, { once: true });
-
-  function setText(id, v) {
-    const n = el(id);
-    if (n) n.textContent = v;
-  }
-
-  // Atualiza textos
-  setText("loadingTitle", CONFIG.nomeProjeto);
-
-  // ===============================
-  // RELEASES
-  // ===============================
+  // =========================================================
+  // 6) RELEASES (para áudio no loading / redirect)
+  // =========================================================
   function releaseFastNoLoading() {
-    // abriu e já estava zerado -> SEM barrinha
-    stopIntroNow(); // garantia
+    stopAllAudio();
 
     const flash = el("flash");
     if (flash) {
@@ -533,23 +284,27 @@ function dropFX(durationMs = 1200) {
     }
 
     document.body.classList.add("page-exit");
-    setTimeout(() => {
-      window.location.replace(CONFIG.redirectPara);
-    }, 450);
+    console.log("[DROP] Finalizado sem loading, redirecionando...");
+
+    setTimeout(() => window.location.replace(CONFIG.redirectPara), 450);
   }
 
   async function releaseWithLoading() {
-    // zerou AO VIVO -> COM barrinha mostrando arquivos
     if (releasing) return;
     releasing = true;
 
     done = true;
     if (interval) clearInterval(interval);
 
-    // ✅ timer já zerou -> NUNCA música
+    // entrou no loading: para intro + coração, toca loading.mp3
     stopIntroNow();
+    stop(heart);
+    try {
+      heart.playbackRate = CONFIG.heartMinRate;
+    } catch {}
 
-    // 🔓 AGORA SIM: permitir preload (somente depois do zero)
+    safePlay(loadingMusic);
+
     allowPreload = true;
 
     document.documentElement.classList.remove("final-phase", "glitching");
@@ -563,18 +318,13 @@ function dropFX(durationMs = 1200) {
     if (fill) fill.style.width = "0%";
     if (pct) pct.textContent = "0";
 
-    ensureAudio();
-    riser(220);
-    setTimeout(() => impact(), 120);
-
     const fileLine = (u) => {
       if (!u) return "";
-      const clean = u.split("?")[0];
+      const clean = String(u).split("?")[0];
       const parts = clean.split("/");
       return parts.slice(-2).join("/");
     };
 
-    // Preload REAL: a barra anda por arquivo concluído
     await preloadAssets((p) => {
       const ratio = p.total ? p.done / p.total : 1;
 
@@ -584,80 +334,70 @@ function dropFX(durationMs = 1200) {
       const status = p.ok ? "Carregando" : "Pulando";
       if (sub) sub.textContent = `${status}: ${fileLine(p.url)} (${p.done}/${p.total})`;
 
-      // som “satisfatório” por arquivo
-      beep(p.ok ? 980 : 440, 0.03, 0.07);
       pulseBarBeat();
-
-      // efeito extra no "Preparando o drop"
-      if (p.ok && /preparando|drop|phases/i.test(p.url)) {
-        setTimeout(() => sparkle(), 60);
-      }
     });
 
-    // terminou tudo
+    // terminou: para loading.mp3 antes de sair
+    stop(loadingMusic);
+
     if (fill) fill.style.width = "100%";
     if (pct) pct.textContent = "100";
     if (sub) sub.textContent = "Abrindo…";
 
-    // ✅ timer zerado -> sem música
     dropFX(2200);
 
-    const flash = el("flash");
-    if (flash) {
-      flash.classList.add("on");
-      setTimeout(() => flash.classList.remove("on"), 220);
-    }
-
-    impact();
-    setTimeout(() => sparkle(), 80);
+    console.log("[DROP] Preload concluído, redirecionando...");
 
     document.body.classList.add("page-exit");
     setTimeout(() => {
+      stopAllAudio();
       window.location.replace(CONFIG.redirectPara);
     }, 650);
   }
 
-  // ===============================
-  // UPDATE LOOP
-  // ===============================
-  let tension60 = false;
-
+  // =========================================================
+  // 7) LOOP PRINCIPAL
+  // - intro toca antes dos 60s finais
+  // - nos 60s finais: intro para (fade) e toca coração
+  // - nos últimos 20s: coração acelera via playbackRate
+  // - ao entrar no loading: coração para e loading.mp3 toca
+  // =========================================================
   function update() {
     if (done) return;
 
     const diffMs = remainingMs();
 
-    // marca que já existiu tempo positivo
     if (diffMs > 0) seenPositive = true;
 
-    // ✅ se zerou:
     if (diffMs <= 0) {
       done = true;
       if (interval) clearInterval(interval);
 
-      if (!seenPositive) {
-        // abriu e já estava zerado -> SEM loading
-        releaseFastNoLoading();
-      } else {
-        // estava no site e zerou agora -> COM loading real
-        releaseWithLoading();
-      }
+      // garantia: ao zerar não fica som sobrando
+      stopAllAudio();
+
+      if (!seenPositive) releaseFastNoLoading();
+      else releaseWithLoading();
+
       return;
     }
 
-    // glitch últimos 3s
     document.documentElement.classList.toggle("glitching", diffMs <= 3000 && diffMs > 0);
 
-    // últimos 60s
     const final60 = diffMs <= 60000 && diffMs > 0;
     document.documentElement.classList.toggle("final-phase", final60);
 
-    // entrou nos 60s: PARA música com fade e aumenta tensão
+    // entrou nos 60s finais
     if (final60 && !tension60) {
       tension60 = true;
 
-      // ✅ bloqueio música <=60s
+      // para música (fade) e inicia coração
       fadeOutStopIntro(CONFIG.fadeStopMs);
+
+      try {
+        heart.playbackRate = CONFIG.heartMinRate;
+      } catch {}
+      safePlay(heart);
 
       dropFX(900);
       const flash = el("flash");
@@ -666,8 +406,38 @@ function dropFX(durationMs = 1200) {
         setTimeout(() => flash.classList.remove("on"), 110);
       }
     }
-    if (!final60) tension60 = false;
 
+    // se voltar no tempo (sai dos 60s finais)
+    if (!final60 && tension60) {
+      tension60 = false;
+      stop(heart);
+      try {
+        heart.playbackRate = CONFIG.heartMinRate;
+      } catch {}
+      // (não força tocar intro automaticamente: depende do gate/usuário)
+    }
+
+    // aceleração do coração nos últimos 20s
+    if (final60) {
+      const secLeft = Math.floor(diffMs / 1000);
+
+      if (secLeft <= CONFIG.heartRampStartSec) {
+        const progress = 1 - secLeft / CONFIG.heartRampStartSec; // 0..1
+        const rate =
+          CONFIG.heartMinRate +
+          (CONFIG.heartMaxRate - CONFIG.heartMinRate) * progress;
+
+        try {
+          heart.playbackRate = Math.min(CONFIG.heartMaxRate, rate);
+        } catch {}
+      } else {
+        try {
+          heart.playbackRate = CONFIG.heartMinRate;
+        } catch {}
+      }
+    }
+
+    // contador
     const total = Math.floor(diffMs / 1000);
     const dias = Math.floor(total / 86400);
     const horas = Math.floor((total % 86400) / 3600);
@@ -678,50 +448,13 @@ function dropFX(durationMs = 1200) {
     setText("horas", pad2(horas));
     setText("minutos", pad2(minutos));
     setText("segundos", pad2(segundos));
-
-    // tensão sonora nos 60s finais (sem música)
-    if (final60) {
-      const sec = Math.floor(diffMs / 1000);
-      if (sec !== lastSec) {
-        lastSec = sec;
-
-        ensureAudio();
-        pulseBarBeat();
-
-        const intensity = Math.min(60, Math.max(0, 60 - sec));
-        const f1 = 420 + intensity * 10;
-        const f2 = 760 + intensity * 14;
-
-        impact();
-        beep(f1, 0.05, 0.10 + intensity * 0.002);
-
-        if (sec <= 20) {
-          setTimeout(() => beep(f2, 0.04, 0.12 + intensity * 0.002), 70);
-        }
-
-        if (sec <= 10) {
-          setTimeout(() => riser(160), 40);
-          setTimeout(() => beep(1300 + intensity * 6, 0.04, 0.14), 120);
-
-          const flash = el("flash");
-          if (flash) {
-            flash.classList.add("on");
-            setTimeout(() => flash.classList.remove("on"), 70);
-          }
-        }
-
-        if (sec <= 3) {
-          setTimeout(() => sparkle(), 40);
-          setTimeout(() => beep(1800, 0.08, 0.14), 110);
-        }
-      }
-    } else {
-      lastSec = null;
-    }
   }
 
-  // ===== INIT =====
+  // =========================================================
+  // 8) INIT
+  // =========================================================
   setupAudioGate();
+  safePlayIntro(); // tenta tocar (só funciona após gesto; gate cuida disso)
   update();
   interval = setInterval(update, 250);
 
