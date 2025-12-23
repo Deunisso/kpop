@@ -486,3 +486,54 @@ body {
         font-size: 0.7rem;
     }
 }
+
+/* ============================
+   LOCKED CARD: imagem cinza + mensagem em cima
+   ============================ */
+
+/* garanta contexto pro overlay */
+.card { position: absolute; }
+.card { overflow: hidden; }
+
+/* quando estiver locked, deixa a imagem cinza/escura */
+.card.locked img{
+  filter: grayscale(100%) brightness(.55) contrast(1.05);
+  transform: none;
+}
+
+/* overlay + texto */
+.card.locked::after{
+  content: attr(data-lockmsg);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  text-align: center;
+
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  line-height: 1.25;
+
+  /* fundo pra destacar o texto por cima da imagem */
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,.15),
+    rgba(0,0,0,.55)
+  );
+
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* no mobile, texto um pouco menor */
+@media (max-width: 768px){
+  .card.locked::after{
+    font-size: 0.82rem;
+    padding: 14px;
+  }
+}
