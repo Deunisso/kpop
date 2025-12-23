@@ -26,9 +26,9 @@
     // ===== CORAÇÃO (nos 60s finais) =====
     heartSrc: "./sounds/heartbeat.mp3",
     heartVolume: 0.9,
-    heartMinRate: 1.0,     // 60s → 21s
-    heartMaxRate: 1.6,     // 0s
-    heartRampStartSec: 20, // começa acelerar faltando 20s
+    heartMinRate: 1.0,
+    heartMaxRate: 1.6,
+    heartRampStartSec: 20,
 
     // ===== LOADING (durante preload) =====
     loadingSrc: "./sounds/loading.mp3",
@@ -39,9 +39,13 @@
     assets: window.ASSETS_MANIFEST || [],
 
     // ✅ HORA "REAL" (CORS OK) — GitHub Pages
-    // Usa WorldTimeAPI (America/Sao_Paulo)
     timeApi: "https://worldtimeapi.org/api/timezone/America/Sao_Paulo",
-    resyncEveryMs: 30_000
+    resyncEveryMs: 30_000,
+
+    // ===== HEART VISUAL SYNC (detecção de batida via Analyser) =====
+    beatThreshold: 26,     // sensibilidade (20~40). Menor = mais sensível
+    beatCooldownMs: 120,   // mínimo entre pulsos (ms)
+    beatPulseMs: 140       // duração do pulso visual (ms)
   };
 
   const el = (id) => document.getElementById(id);
@@ -62,9 +66,83 @@
   setText("loadingTitle", CONFIG.nomeProjeto);
 
   // =========================================================
-  // 2) HORA "REAL" (ANTI TROCAR HORA DO CELULAR)
+  // 2) CSS + INDICADOR DE SYNC (internet vs fallback)
   // =========================================================
-  // Offset em ms: serverNow - localNow
+  function injectStylesOnce() {
+    if (document.getElementById("__dropStyles")) return;
+    const s = document.createElement("style");
+    s.id = "__dropStyles";
+    s.textContent = `
+      .time-badge{
+        position:fixed; z-index:99999;
+        top:14px; right:14px;
+        padding:8px 10px; border-radius:999px;
+        font:600 12px/1.0 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        letter-spacing:.2px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border:1px solid rgba(255,255,255,.16);
+        background: rgba(0,0,0,.35);
+        color:#fff;
+        display:flex; align-items:center; gap:8px;
+        user-select:none;
+      }
+      .time-dot{
+        width:10px; height:10px; border-radius:50%;
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      }
+      .time-dot.ok{ background:#32d74b; box-shadow: 0 0 18px rgba(50,215,75,.65); }
+      .time-dot.bad{ background:#ff453a; box-shadow: 0 0 18px rgba(255,69,58,.55); }
+      .time-dot.warn{ background:#ffd60a; box-shadow: 0 0 18px rgba(255,214,10,.55); }
+
+      /* pulso sincronizado com o heartbeat */
+      .hb-pulse{
+        animation: hbPulse .14s ease-out both;
+      }
+      @keyframes hbPulse{
+        0%   { transform: scale(1); filter: brightness(1); }
+        45%  { transform: scale(1.035); filter: brightness(1.35); }
+        100% { transform: scale(1); filter: brightness(1); }
+      }
+
+      /* reforço de flash rápido (opcional) */
+      #flash.hb-flash{
+        opacity: 1 !important;
+        transition: opacity .14s ease-out !important;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function ensureTimeBadge() {
+    injectStylesOnce();
+
+    let badge = document.getElementById("__timeBadge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "__timeBadge";
+      badge.className = "time-badge";
+      badge.innerHTML = `<span class="time-dot warn" id="__timeDot"></span><span id="__timeText">SINCRONIZANDO…</span>`;
+      document.body.appendChild(badge);
+    }
+    return badge;
+  }
+
+  function setTimeBadge(state, text) {
+    // state: "ok" | "bad" | "warn"
+    const badge = ensureTimeBadge();
+    const dot = badge.querySelector("#__timeDot");
+    const t = badge.querySelector("#__timeText");
+    if (dot) {
+      dot.classList.remove("ok", "bad", "warn");
+      dot.classList.add(state);
+    }
+    if (t) t.textContent = text;
+  }
+
+  // =========================================================
+  // 3) HORA "REAL" (ANTI TROCAR HORA DO CELULAR)
+  // =========================================================
   let netOffsetMs = 0;
 
   function netNowMs() {
@@ -72,7 +150,6 @@
   }
 
   // Alvo em Brasília (UTC-3 fixo)
-  // (BR não usa horário de verão atualmente; se isso mudar, recomendo mover "liberarEmUtcMs" pro servidor)
   const BRASILIA_OFFSET_MIN = -180;
   const liberarEmUtcMs =
     Date.UTC(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo) -
@@ -91,20 +168,18 @@
 
     const data = await r.json();
 
-    // WorldTimeAPI fornece unixtime (segundos)
     const serverMs = Number(data.unixtime) * 1000;
     if (!Number.isFinite(serverMs)) throw new Error("WorldTimeAPI inválida");
 
-    // Ajuste por RTT (meio caminho)
     const rtt = t1 - t0;
     const estimatedLocalAtServer = t0 + rtt / 2;
 
     netOffsetMs = serverMs - estimatedLocalAtServer;
-    return true;
+    return { ok: true, rtt };
   }
 
   // =========================================================
-  // 3) VISUAL
+  // 4) VISUAL
   // =========================================================
   function dropFX(durationMs = 1200) {
     const flash = el("flash");
@@ -121,8 +196,24 @@
     fill.classList.add("beat");
   }
 
+  // Pulso sincronizado (usado pelo detector de batida)
+  function heartbeatVisualPulse() {
+    // 1) “pump” no container do countdown ou body
+    const target = document.body; // pode trocar pra el("wrapper") se tiver
+    target.classList.remove("hb-pulse");
+    void target.offsetWidth;
+    target.classList.add("hb-pulse");
+
+    // 2) micro flash (opcional) usando #flash se existir
+    const flash = el("flash");
+    if (flash) {
+      flash.classList.add("hb-flash");
+      setTimeout(() => flash.classList.remove("hb-flash"), CONFIG.beatPulseMs);
+    }
+  }
+
   // =========================================================
-  // 4) PRELOAD
+  // 5) PRELOAD
   // =========================================================
   function isImage(url) {
     return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
@@ -183,7 +274,7 @@
   }
 
   // =========================================================
-  // 5) ÁUDIO (intro + heartbeat + loading)
+  // 6) ÁUDIO (intro + heartbeat + loading) + DETECTOR DE BATIDA
   // =========================================================
   const introMusic = new Audio(CONFIG.musicaSrc);
   introMusic.preload = "auto";
@@ -258,10 +349,78 @@
     stop(heart);
     stop(loadingMusic);
     try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+    stopHeartbeatDetector();
+  }
+
+  // ---- Detector real (Analyser) para sincronizar visual com o MP3 ----
+  let audioCtx = null;
+  let heartSrcNode = null;
+  let analyser = null;
+  let analyserData = null;
+  let analyserRAF = 0;
+  let lastBeatAt = 0;
+
+  function ensureHeartbeatAnalyser() {
+    if (analyser) return;
+
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    // MediaElementSource só pode ser criado uma vez por elemento
+    if (!heartSrcNode) heartSrcNode = audioCtx.createMediaElementSource(heart);
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyserData = new Uint8Array(analyser.fftSize);
+
+    // rota: heart -> analyser -> destination
+    heartSrcNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  }
+
+  function startHeartbeatDetector() {
+    try {
+      ensureHeartbeatAnalyser();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    } catch {
+      return; // se falhar, só não sincroniza visual (áudio continua)
+    }
+
+    cancelAnimationFrame(analyserRAF);
+    lastBeatAt = 0;
+
+    const loop = () => {
+      if (!analyser) return;
+
+      analyser.getByteTimeDomainData(analyserData);
+
+      // mede pico (desvio máximo do centro 128)
+      let peak = 0;
+      for (let i = 0; i < analyserData.length; i++) {
+        const v = Math.abs(analyserData[i] - 128);
+        if (v > peak) peak = v;
+      }
+
+      const now = performance.now();
+      if (peak >= CONFIG.beatThreshold && now - lastBeatAt >= CONFIG.beatCooldownMs) {
+        lastBeatAt = now;
+        heartbeatVisualPulse();
+        // também dá um “tap” na barra (fica lindo)
+        pulseBarBeat();
+      }
+
+      analyserRAF = requestAnimationFrame(loop);
+    };
+
+    analyserRAF = requestAnimationFrame(loop);
+  }
+
+  function stopHeartbeatDetector() {
+    cancelAnimationFrame(analyserRAF);
+    analyserRAF = 0;
+    lastBeatAt = 0;
   }
 
   // =========================================================
-  // 6) AUDIO GATE (botão OK)
+  // 7) AUDIO GATE (botão OK)
   // =========================================================
   function setupAudioGate() {
     const audioGate = el("audioGate");
@@ -281,6 +440,12 @@
         introMusic.currentTime = 0;
       } catch {}
 
+      // também libera/resume AudioContext p/ analyser
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+      } catch {}
+
       safePlayIntro();
       hideGate();
     }
@@ -297,7 +462,7 @@
   }
 
   // =========================================================
-  // 7) RELEASES
+  // 8) RELEASES
   // =========================================================
   function releaseFastNoLoading() {
     stopAllAudio();
@@ -312,9 +477,11 @@
     done = true;
     if (interval) clearInterval(interval);
 
+    // entrou no loading: para intro + coração (e detector), toca loading.mp3
     stopIntroNow();
     stop(heart);
     try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+    stopHeartbeatDetector();
 
     safePlay(loadingMusic);
 
@@ -366,7 +533,7 @@
   }
 
   // =========================================================
-  // 8) LOOP PRINCIPAL
+  // 9) LOOP PRINCIPAL
   // =========================================================
   function update() {
     if (done) return;
@@ -389,6 +556,7 @@
     const final60 = diffMs <= 60000 && diffMs > 0;
     document.documentElement.classList.toggle("final-phase", final60);
 
+    // entra nos 60s finais
     if (final60 && !tension60) {
       tension60 = true;
 
@@ -396,6 +564,7 @@
 
       try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
       safePlay(heart);
+      startHeartbeatDetector();
 
       dropFX(900);
       const flash = el("flash");
@@ -405,12 +574,15 @@
       }
     }
 
+    // sai dos 60s finais
     if (!final60 && tension60) {
       tension60 = false;
       stop(heart);
+      stopHeartbeatDetector();
       try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
     }
 
+    // aceleração do coração nos últimos 20s
     if (final60) {
       const secLeft = Math.floor(diffMs / 1000);
 
@@ -439,27 +611,37 @@
   }
 
   // =========================================================
-  // INIT
+  // 10) INIT
   // =========================================================
   (async () => {
     setupAudioGate();
+    ensureTimeBadge();
 
-    // 🔒 sync inicial (anti-burlar relógio)
+    // 🔒 sync inicial
     try {
-      await syncNetTime();
+      setTimeBadge("warn", "SINCRONIZANDO…");
+      const r = await syncNetTime();
+      setTimeBadge("ok", `HORA ONLINE ✓  RTT ${Math.round(r.rtt)}ms`);
     } catch (e) {
-      console.warn("[TIME] Falhou sync (sem internet/CORS). Usando relógio local.", e);
+      console.warn("[TIME] Falhou sync (sem internet). Usando relógio local.", e);
       netOffsetMs = 0;
+      setTimeBadge("bad", "HORA LOCAL (fallback)");
     }
 
-    // re-sync periódico
+    // re-sync periódico + atualização do badge
     if (CONFIG.resyncEveryMs > 0) {
-      setInterval(() => {
-        syncNetTime().catch(() => {});
+      setInterval(async () => {
+        try {
+          const r = await syncNetTime();
+          setTimeBadge("ok", `HORA ONLINE ✓  RTT ${Math.round(r.rtt)}ms`);
+        } catch {
+          netOffsetMs = 0;
+          setTimeBadge("bad", "HORA LOCAL (fallback)");
+        }
       }, CONFIG.resyncEveryMs);
     }
 
-    safePlayIntro();
+    safePlayIntro(); // só toca após gesto; gate cuida disso
     update();
     interval = setInterval(update, 250);
 
