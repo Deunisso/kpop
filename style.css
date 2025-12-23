@@ -129,9 +129,9 @@ body{
 
 /* ===== piso refletivo ===== */
 .stage-floor{
-  position:absolute;
-  left:-10%;
-  right:-10%;
+  position:relative;
+  left:0%;
+  right:0%;
   bottom:-30%;
   height:55%;
   background:
@@ -147,7 +147,7 @@ body{
 .beam{
   position:absolute;
   top:-12%;
-  width:22vw;
+  width:30vw;
   min-width:220px;
   max-width:420px;
   height:120vh;

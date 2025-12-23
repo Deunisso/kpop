@@ -70,7 +70,7 @@ async function preloadAssets(onProgress) {
     }
 
     // ⏱️ DELAY FORÇADO POR ARQUIVO
-    await wait(1000); // ← 1000 = 1s | 3000 = 3s
+    await wait(300); // ← 300 = 0,3s | 1000 = 1s
   }
 }
 
@@ -112,6 +112,17 @@ function dropFX(durationMs = 1200) {
     // IMPORTANTE: esses caminhos devem ser acessíveis via HTTP no seu site.
     assets: [
       // exemplos (substitua pelo seu "manifest")
+      "./img/Avengers.jpg",
+      "./img/Back.jpg",
+      "./img/Dancing.gif",
+      "./img/down.png",
+      "./img/favicon.png",
+      "./img/Gauntlet.jpg",
+      "./img/Guacamole.jpg",
+      "./img/Next.jpg",
+      "./img/Proud.jpg",
+      "./img/top.png",
+
       "./phase1/music/Black.mp3",
       "./phase1/music/Blue.mp3",
       "./phase1/music/Gauntlet.mp3",
@@ -120,6 +131,15 @@ function dropFX(durationMs = 1200) {
       "./phase1/music/Purple.mp3",
       "./phase1/music/Red.mp3",
       "./phase1/music/Yellow.mp3",
+
+      "./phase1/img/Black.jpg",
+      "./phase1/img/Blue.jpg",
+      "./phase1/img/Gauntlet.jpg",
+      "./phase1/img/Green.jpg",
+      "./phase1/img/Orange.jpg",
+      "./phase1/img/Purple.jpg",
+      "./phase1/img/Red.jpg",
+      "./phase1/img/Yellow.jpg",
 
       "./phase2/music/AngryV2.mp3",
       "./phase2/music/Armor.mp3",
@@ -130,6 +150,15 @@ function dropFX(durationMs = 1200) {
       "./phase2/music/Shield.mp3",
       "./phase2/music/ThunderV2.mp3",
 
+      "./phase2/img/AngryV2.jpg",
+      "./phase2/img/Armor.jpg",
+      "./phase2/img/Avengers.jpg",
+      "./phase2/img/Explicit.jpg",
+      "./phase2/img/Magic.jpg",
+      "./phase2/img/ResponsibilitiesV2.jpg",
+      "./phase2/img/Shield.jpg",
+      "./phase2/img/ThunderV2.jpg",
+
       "./phase3/music/Card.mp3",
       "./phase3/music/Colgate.mp3",
       "./phase3/music/Miss.mp3",
@@ -138,6 +167,15 @@ function dropFX(durationMs = 1200) {
       "./phase3/music/Proud.mp3",
       "./phase3/music/Santa.mp3",
       "./phase3/music/Walking.mp3",
+
+      "./phase3/img/Card.jpg",
+      "./phase3/img/Colgate.jpg",
+      "./phase3/img/Miss.jpg",
+      "./phase3/img/New.jpg",
+      "./phase3/img/Percy.jpg",
+      "./phase3/img/Proud.jpg",
+      "./phase3/img/Santa.jpg",
+      "./phase3/img/Walking.jpg",
 
       "./phase4/music/Bath.mp3",
       "./phase4/music/Cruzeiro.mp3",
@@ -148,6 +186,15 @@ function dropFX(durationMs = 1200) {
       "./phase4/music/RollerSkates.mp3",
       "./phase4/music/Vo.mp3",
 
+      "./phase4/img/Bath.jpg",
+      "./phase4/img/Cruzeiro.jpg",
+      "./phase4/img/Dan.jpg",
+      "./phase4/img/IlhaBela.jpg",
+      "./phase4/img/Next.jpg",
+      "./phase4/img/Re.jpg",
+      "./phase4/img/RollerSkates.jpg",
+      "./phase4/img/Vo.jpg",
+
       "./phase5/music/Collide.mp3",
       "./phase5/music/Dama.mp3",
       "./phase5/music/Fire.mp3",
@@ -156,6 +203,15 @@ function dropFX(durationMs = 1200) {
       "./phase5/music/Okay.mp3",
       "./phase5/music/Tayara.mp3",
       "./phase5/music/Unfiltered.mp3",
+
+      "./phase5/img/Collide.jpg",
+      "./phase5/img/Dama.jpg",
+      "./phase5/img/Fire.jpg",
+      "./phase5/img/Guacamole.jpg",
+      "./phase5/img/Lights.jpg",
+      "./phase5/img/Okay.jpg",
+      "./phase5/img/Tayara.jpg",
+      "./phase5/img/Unfiltered.jpg",     
     ],
   };
 
