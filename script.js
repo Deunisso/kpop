@@ -1,43 +1,86 @@
-// ===== HELPERS + DROP FX (ANTES DO IIFE) =====
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+// ===============================
+// PRELOAD REAL (BARRA POR ARQUIVO)
+// ===============================
 
-function dropFX(durationMs = 2200) {
-  const flash = $("#flash");
-  const beams = $$(".beam");
-  const stars = $$(".starfield");
+// ⏱️ helper de delay forçado (OBRIGATÓRIO)
+const wait = (ms) => new Promise(res => setTimeout(res, ms));
 
-  if (flash) {
-    flash.classList.add("on");
-    setTimeout(() => flash.classList.remove("on"), 180);
+function isImage(url) {
+  return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
+}
+function isAudio(url) {
+  return /\.(mp3|wav|ogg|m4a)$/i.test(url);
+}
+
+async function preloadOne(url) {
+  // 🚫 BLOQUEIO TOTAL: nada carrega antes do timer zerar
+  if (!allowPreload) return;
+
+  if (isImage(url)) {
+    await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(true);
+      img.onerror = () => rej(new Error("img fail " + url));
+      img.src = url;
+    });
+    return;
   }
 
-  document.body.classList.add("final-phase");
+  if (isAudio(url)) {
+    await new Promise((res, rej) => {
+      const a = new Audio();
+      a.preload = "auto";
+      a.oncanplaythrough = () => res(true);
+      a.onerror = () => rej(new Error("audio fail " + url));
+      a.src = url;
+      a.load();
+    });
+    return;
+  }
 
-  beams.forEach((b) => {
-    b.dataset.prevOpacity = b.style.opacity || "";
-    b.dataset.prevFilter = b.style.filter || "";
-    b.style.opacity = "1";
-    b.style.filter = "blur(.05px) saturate(1.6) brightness(1.35)";
-  });
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("fetch fail " + url);
+  await r.arrayBuffer();
+}
 
-  stars.forEach((s) => {
-    s.dataset.prevAnim = s.style.animation || "";
-    s.dataset.prevOpacity = s.style.opacity || "";
-    s.style.opacity = "1";
-    s.style.animation = "starPulseFast .12s ease-in-out infinite alternate";
-  });
+async function preloadAssets(onProgress) {
+  const list = Array.isArray(CONFIG.assets) ? CONFIG.assets : [];
+  const total = Math.max(1, list.length);
+  let doneCount = 0;
 
+  for (const url of list) {
+    let ok = true;
+
+    try {
+      await preloadOne(url);
+    } catch (e) {
+      ok = false;
+      console.warn(e);
+    }
+
+    doneCount++;
+
+    if (typeof onProgress === "function") {
+      onProgress({
+        done: doneCount,
+        total,
+        url,
+        ok
+      });
+    }
+
+    // ⏱️ DELAY FORÇADO POR ARQUIVO
+    await wait(1000); // ← 1000 = 1s | 3000 = 3s
+  }
+}
+
+function dropFX(durationMs = 1200) {
+  const flash = document.getElementById("flash");
+  if (!flash) return;
+
+  flash.classList.add("on");
   setTimeout(() => {
-    document.body.classList.remove("final-phase");
-    beams.forEach((b) => {
-      b.style.opacity = b.dataset.prevOpacity || "";
-      b.style.filter = b.dataset.prevFilter || "";
-    });
-    stars.forEach((s) => {
-      s.style.opacity = s.dataset.prevOpacity || "";
-      s.style.animation = s.dataset.prevAnim || "";
-    });
+    flash.classList.remove("on");
   }, durationMs);
 }
 
@@ -45,12 +88,15 @@ function dropFX(durationMs = 2200) {
   // ===== CONFIG =====
   const CONFIG = {
     nomeProjeto: "PREPARANDO O DROP",
+
+    // data/hora do zero
     ano: 2025,
     mes: 12,
     dia: 22,
-    hora: 21,
-    minuto: 54,
+    hora: 23,
+    minuto: 12,
     segundo: 0,
+
     redirectPara: new URL("../phases/index.html", window.location.href).toString(),
 
     // ===== MUSICA =====
@@ -58,11 +104,59 @@ function dropFX(durationMs = 2200) {
     musicaVolume: 0.9,
     musicaComecarEm: 0,
 
-    // REGRA: música bloqueada se <= 60s
+    // NUNCA toca música se faltar <= 60s (ou se já zerou)
     blockMusicUnderMs: 60000,
-
-    // Fade quando entrar nos 60s
     fadeStopMs: 1200,
+
+    // ===== ASSETS PRA PRÉ-CARREGAR (você vai me mandar e eu monto) =====
+    // IMPORTANTE: esses caminhos devem ser acessíveis via HTTP no seu site.
+    assets: [
+      // exemplos (substitua pelo seu "manifest")
+      "./phase1/music/Black.mp3",
+      "./phase1/music/Blue.mp3",
+      "./phase1/music/Gauntlet.mp3",
+      "./phase1/music/Green.mp3",
+      "./phase1/music/Orange.mp3",
+      "./phase1/music/Purple.mp3",
+      "./phase1/music/Red.mp3",
+      "./phase1/music/Yellow.mp3",
+
+      "./phase2/music/AngryV2.mp3",
+      "./phase2/music/Armor.mp3",
+      "./phase2/music/Avengers.mp3",
+      "./phase2/music/Explicit.mp3",
+      "./phase2/music/Magic.mp3",
+      "./phase2/music/ResponsibilitiesV2.mp3",
+      "./phase2/music/Shield.mp3",
+      "./phase2/music/ThunderV2.mp3",
+
+      "./phase3/music/Card.mp3",
+      "./phase3/music/Colgate.mp3",
+      "./phase3/music/Miss.mp3",
+      "./phase3/music/New.mp3",
+      "./phase3/music/Percy.mp3",
+      "./phase3/music/Proud.mp3",
+      "./phase3/music/Santa.mp3",
+      "./phase3/music/Walking.mp3",
+
+      "./phase4/music/Bath.mp3",
+      "./phase4/music/Cruzeiro.mp3",
+      "./phase4/music/Dan.mp3",
+      "./phase4/music/IlhaBela.mp3",
+      "./phase4/music/Next.mp3",
+      "./phase4/music/Re.mp3",
+      "./phase4/music/RollerSkates.mp3",
+      "./phase4/music/Vo.mp3",
+
+      "./phase5/music/Collide.mp3",
+      "./phase5/music/Dama.mp3",
+      "./phase5/music/Fire.mp3",
+      "./phase5/music/Guacamole.mp3",
+      "./phase5/music/Lights.mp3",
+      "./phase5/music/Okay.mp3",
+      "./phase5/music/Tayara.mp3",
+      "./phase5/music/Unfiltered.mp3",
+    ],
   };
 
   const liberarEm = new Date(
@@ -82,7 +176,13 @@ function dropFX(durationMs = 2200) {
   let done = false;
   let interval = null;
 
-  // ===== AUDIO (MÚSICA) =====
+  // se já viu o timer positivo (abriu antes de zerar), então quando zerar "ao vivo" mostra loading
+  let seenPositive = false;
+  let releasing = false;
+
+  // ===============================
+  // AUDIO: MÚSICA (intro)
+  // ===============================
   const introMusic = new Audio(CONFIG.musicaSrc);
   introMusic.preload = "auto";
   introMusic.volume = CONFIG.musicaVolume;
@@ -93,17 +193,15 @@ function dropFX(durationMs = 2200) {
 
   function isMusicAllowedNow() {
     const ms = remainingMs();
-    return ms > CONFIG.blockMusicUnderMs; // só toca se FALTAR MAIS que 60s
+    return ms > CONFIG.blockMusicUnderMs; // só toca se faltar MAIS de 60s
   }
 
   function safePlayIntro() {
-    // ✅ BLOQUEIO ABSOLUTO
+    // BLOQUEIO ABSOLUTO
     if (!isMusicAllowedNow()) return;
-
     try {
       introMusic.currentTime = CONFIG.musicaComecarEm || 0;
       introMusic.volume = CONFIG.musicaVolume;
-
       const p = introMusic.play();
       if (p && typeof p.catch === "function") p.catch(() => {});
     } catch {}
@@ -120,15 +218,14 @@ function dropFX(durationMs = 2200) {
   function fadeOutStopIntro(ms = 1200) {
     try {
       if (introMusic.paused) return;
-
       const startVol = introMusic.volume;
-      const steps = 30; // suave
+      const steps = 30;
       let i = 0;
 
       const t = setInterval(() => {
         i++;
         const k = 1 - i / steps;
-        const eased = k * k;
+        const eased = k * k; // suave
         introMusic.volume = Math.max(0, startVol * eased);
 
         if (i >= steps) {
@@ -139,7 +236,9 @@ function dropFX(durationMs = 2200) {
     } catch {}
   }
 
-  // ===== WEB AUDIO SFX (tensão) =====
+  // ===============================
+  // WEB AUDIO: SFX (tensão / loading)
+  // ===============================
   function ensureAudio() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
   }
@@ -239,7 +338,82 @@ function dropFX(durationMs = 2200) {
     } catch {}
   }
 
-  // ===== BOTÃO OK =====
+  // ===============================
+  // PRELOAD REAL (BARRA POR ARQUIVO)
+  // ===============================
+  function isImage(url) {
+    return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
+  }
+  function isAudio(url) {
+    return /\.(mp3|wav|ogg|m4a)$/i.test(url);
+  }
+
+  async function preloadOne(url) {
+    // 🚫 BLOQUEIO TOTAL: nada carrega antes do timer zerar
+    if (!allowPreload) return;
+
+    if (isImage(url)) {
+      await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(true);
+        img.onerror = () => rej(new Error("img fail " + url));
+        img.src = url;
+      });
+      return;
+    }
+
+    if (isAudio(url)) {
+      await new Promise((res, rej) => {
+        const a = new Audio();
+        a.preload = "auto";
+        a.oncanplaythrough = () => res(true);
+        a.onerror = () => rej(new Error("audio fail " + url));
+        a.src = url;
+        a.load();
+      });
+      return;
+    }
+
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("fetch fail " + url);
+    await r.arrayBuffer();
+  }
+
+  async function preloadAssets(onProgress) {
+    const list = Array.isArray(CONFIG.assets) ? CONFIG.assets : [];
+    const total = Math.max(1, list.length);
+    let doneCount = 0;
+
+    for (const url of list) {
+      let ok = true;
+
+      try {
+        await preloadOne(url);
+      } catch (e) {
+        ok = false;
+        console.warn(e);
+      }
+
+      doneCount++;
+
+      if (typeof onProgress === "function") {
+        onProgress({
+          done: doneCount,
+          total,
+          url,
+          ok
+        });
+      }
+
+      // ⏱️ DELAY FORÇADO POR ARQUIVO
+      await wait(300);
+    }
+  }
+
+  // ===============================
+  // AUDIO GATE (BOTÃO OK)
+  // HTML precisa: <button id="audioOk" ...>
+  // ===============================
   function setupAudioGate() {
     const audioGate = el("audioGate");
     const audioOk = el("audioOk");
@@ -247,16 +421,17 @@ function dropFX(durationMs = 2200) {
 
     function hideGate() {
       audioGate.classList.add("hide");
-      setTimeout(() => { audioGate.style.display = "none"; }, 360);
+      setTimeout(() => {
+        audioGate.style.display = "none";
+      }, 360);
     }
 
     function enableAudioFromGate() {
       enableAudioOnce();
 
-      // ✅ Só toca música se faltar MAIS de 60s
+      // ✅ música só se faltar > 60s
       safePlayIntro();
 
-      // sparkle de confirmação
       riser(160);
       setTimeout(() => sparkle(), 120);
 
@@ -276,6 +451,7 @@ function dropFX(durationMs = 2200) {
     });
   }
 
+  // fallback pra liberar AudioContext
   window.addEventListener("pointerdown", enableAudioOnce, { once: true });
   window.addEventListener("keydown", enableAudioOnce, { once: true });
 
@@ -284,14 +460,15 @@ function dropFX(durationMs = 2200) {
     if (n) n.textContent = v;
   }
 
+  // Atualiza textos
   setText("loadingTitle", CONFIG.nomeProjeto);
 
-  // ===== FLAGS =====
-  let tension60 = false;
-
-  function redirectInstantNoLoading() {
-    // ✅ SEM loading/barrinha quando zera
-    stopIntroNow(); // ✅ sem música em hipótese alguma
+  // ===============================
+  // RELEASES
+  // ===============================
+  function releaseFastNoLoading() {
+    // abriu e já estava zerado -> SEM barrinha
+    stopIntroNow(); // garantia
 
     const flash = el("flash");
     if (flash) {
@@ -299,25 +476,116 @@ function dropFX(durationMs = 2200) {
       setTimeout(() => flash.classList.remove("on"), 180);
     }
 
-    // um impacto visual rápido opcional
-    dropFX(900);
+    document.body.classList.add("page-exit");
+    setTimeout(() => {
+      window.location.replace(CONFIG.redirectPara);
+    }, 450);
+  }
+
+  async function releaseWithLoading() {
+    // zerou AO VIVO -> COM barrinha mostrando arquivos
+    if (releasing) return;
+    releasing = true;
+
+    done = true;
+    if (interval) clearInterval(interval);
+
+    // ✅ timer já zerou -> NUNCA música
+    stopIntroNow();
+
+    // 🔓 AGORA SIM: permitir preload (somente depois do zero)
+    allowPreload = true;
+
+    document.documentElement.classList.remove("final-phase", "glitching");
+
+    const loading = el("loading");
+    const fill = el("loadingFill");
+    const pct = el("loadingPct");
+    const sub = el("loadingSub");
+
+    if (loading) loading.classList.add("on");
+    if (fill) fill.style.width = "0%";
+    if (pct) pct.textContent = "0";
+
+    ensureAudio();
+    riser(220);
+    setTimeout(() => impact(), 120);
+
+    const fileLine = (u) => {
+      if (!u) return "";
+      const clean = u.split("?")[0];
+      const parts = clean.split("/");
+      return parts.slice(-2).join("/");
+    };
+
+    // Preload REAL: a barra anda por arquivo concluído
+    await preloadAssets((p) => {
+      const ratio = p.total ? p.done / p.total : 1;
+
+      if (fill) fill.style.width = (ratio * 100).toFixed(1) + "%";
+      if (pct) pct.textContent = String(Math.floor(ratio * 100));
+
+      const status = p.ok ? "Carregando" : "Pulando";
+      if (sub) sub.textContent = `${status}: ${fileLine(p.url)} (${p.done}/${p.total})`;
+
+      // som “satisfatório” por arquivo
+      beep(p.ok ? 980 : 440, 0.03, 0.07);
+      pulseBarBeat();
+
+      // efeito extra no "Preparando o drop"
+      if (p.ok && /preparando|drop|phases/i.test(p.url)) {
+        setTimeout(() => sparkle(), 60);
+      }
+    });
+
+    // terminou tudo
+    if (fill) fill.style.width = "100%";
+    if (pct) pct.textContent = "100";
+    if (sub) sub.textContent = "Abrindo…";
+
+    // ✅ timer zerado -> sem música
+    dropFX(2200);
+
+    const flash = el("flash");
+    if (flash) {
+      flash.classList.add("on");
+      setTimeout(() => flash.classList.remove("on"), 220);
+    }
+
+    impact();
+    setTimeout(() => sparkle(), 80);
 
     document.body.classList.add("page-exit");
     setTimeout(() => {
       window.location.replace(CONFIG.redirectPara);
-    }, 520);
+    }, 650);
   }
+
+  // ===============================
+  // UPDATE LOOP
+  // ===============================
+  let tension60 = false;
 
   function update() {
     if (done) return;
 
     const diffMs = remainingMs();
 
-    // ✅ se já zerou: sem barrinha, sem música
+    // marca que já existiu tempo positivo
+    if (diffMs > 0) seenPositive = true;
+
+    // ✅ se zerou:
     if (diffMs <= 0) {
       done = true;
       if (interval) clearInterval(interval);
-      redirectInstantNoLoading();
+
+      if (!seenPositive) {
+        // abriu e já estava zerado -> SEM loading
+        releaseFastNoLoading();
+      } else {
+        // estava no site e zerou agora -> COM loading real
+        releaseWithLoading();
+      }
       return;
     }
 
@@ -328,11 +596,11 @@ function dropFX(durationMs = 2200) {
     const final60 = diffMs <= 60000 && diffMs > 0;
     document.documentElement.classList.toggle("final-phase", final60);
 
-    // entrou nos 60s: PARA música com fade e começa tensão
+    // entrou nos 60s: PARA música com fade e aumenta tensão
     if (final60 && !tension60) {
       tension60 = true;
 
-      // ✅ BLOQUEIO ABSOLUTO DE MÚSICA <= 60s
+      // ✅ bloqueio música <=60s
       fadeOutStopIntro(CONFIG.fadeStopMs);
 
       dropFX(900);
@@ -355,7 +623,7 @@ function dropFX(durationMs = 2200) {
     setText("minutos", pad2(minutos));
     setText("segundos", pad2(segundos));
 
-    // tensão sonora nos 60s finais
+    // tensão sonora nos 60s finais (sem música)
     if (final60) {
       const sec = Math.floor(diffMs / 1000);
       if (sec !== lastSec) {
@@ -396,7 +664,7 @@ function dropFX(durationMs = 2200) {
     }
   }
 
-  // ===== init =====
+  // ===== INIT =====
   setupAudioGate();
   update();
   interval = setInterval(update, 250);
