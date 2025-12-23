@@ -11,8 +11,8 @@
     mes: 12,
     dia: 23,
     hora: 19,
-    minuto: 27,
-    segundo: 0,
+    minuto: 29,
+    segundo: 50,
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
 
@@ -27,15 +27,15 @@
     heartSrc: "./sounds/heartbeat.mp3",
     heartVolume: 0.9,
     heartMinRate: 1.0,
-    heartMaxRate: 1.75,     // um pouco mais “nervoso” no final
-    heartRampStartSec: 20,  // acelera a partir de 20s
+    heartMaxRate: 1.6,
+    heartRampStartSec: 20,
 
     // ===== LOADING (durante preload) =====
     loadingSrc: "./sounds/loading.mp3",
     loadingVolume: 0.75,
 
     // ===== PRELOAD =====
-    perFileDelayMs: 220, // mais fluído (antes 300)
+    perFileDelayMs: 300,
     assets: window.ASSETS_MANIFEST || [],
 
     // ✅ HORA "REAL" (CORS OK) — GitHub Pages
@@ -43,9 +43,9 @@
     resyncEveryMs: 30_000,
 
     // ===== HEART VISUAL SYNC (detecção de batida via Analyser) =====
-    beatThreshold: 26,    // sensibilidade (20~40)
-    beatCooldownMs: 120, // mínimo entre pulsos
-    beatPulseMs: 140
+    beatThreshold: 26,     // sensibilidade (20~40). Menor = mais sensível
+    beatCooldownMs: 120,   // mínimo entre pulsos (ms)
+    beatPulseMs: 140       // duração do pulso visual (ms)
   };
 
   const el = (id) => document.getElementById(id);
@@ -67,7 +67,6 @@
 
   // =========================================================
   // 2) CSS + INDICADOR DE SYNC (internet vs fallback)
-  // (usa suas variáveis do :root)
   // =========================================================
   function injectStylesOnce() {
     if (document.getElementById("__dropStyles")) return;
@@ -76,50 +75,34 @@
     s.textContent = `
       .time-badge{
         position:fixed; z-index:99999;
-        top:16px; right:16px;
-        padding:10px 12px; border-radius:999px;
-        font:800 11px/1.0 Arial, Helvetica, sans-serif;
-        letter-spacing:.22em;
-        text-transform:uppercase;
-        display:flex; align-items:center; gap:10px;
-        color: var(--text);
-        background: rgba(0,0,0,.32);
-        border: 1px solid rgba(255,255,255,.16);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        box-shadow:
-          0 18px 60px rgba(0,0,0,.55),
-          0 0 26px rgba(0,245,255,.10),
-          0 0 26px rgba(255,43,214,.08);
+        top:14px; right:14px;
+        padding:8px 10px; border-radius:999px;
+        font:600 12px/1.0 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        letter-spacing:.2px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border:1px solid rgba(255,255,255,.16);
+        background: rgba(0,0,0,.35);
+        color:#fff;
+        display:flex; align-items:center; gap:8px;
+        user-select:none;
       }
-
       .time-dot{
         width:10px; height:10px; border-radius:50%;
-        background: rgba(255,255,255,.25);
-        box-shadow: 0 0 0 rgba(0,0,0,0);
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
       }
+      .time-dot.ok{ background:#32d74b; box-shadow: 0 0 18px rgba(50,215,75,.65); }
+      .time-dot.bad{ background:#ff453a; box-shadow: 0 0 18px rgba(255,69,58,.55); }
+      .time-dot.warn{ background:#ffd60a; box-shadow: 0 0 18px rgba(255,214,10,.55); }
 
-      .time-dot.ok{
-        background: var(--neon);
-        box-shadow: 0 0 16px rgba(0,245,255,.55);
-      }
-      .time-dot.bad{
-        background: #ff453a;
-        box-shadow: 0 0 16px rgba(255,69,58,.45);
-      }
-      .time-dot.warn{
-        background: #ffd60a;
-        box-shadow: 0 0 16px rgba(255,214,10,.40);
-      }
-
-      /* pulso sincronizado (SEM brilho/flash — só escala) */
+      /* pulso sincronizado com o heartbeat (SEM FLASH) */
       .hb-pulse{
         animation: hbPulse .14s ease-out both;
       }
       @keyframes hbPulse{
-        0%   { transform: scale(1); }
-        45%  { transform: scale(1.018); }
-        100% { transform: scale(1); }
+        0%   { transform: scale(1); filter: brightness(1); }
+        45%  { transform: scale(1.03); filter: brightness(1.18); }
+        100% { transform: scale(1); filter: brightness(1); }
       }
     `;
     document.head.appendChild(s);
@@ -159,10 +142,7 @@
     return Date.now() + netOffsetMs;
   }
 
-  // Brasília é UTC-3 fixo
   const BRASILIA_OFFSET_MIN = -180;
-
-  // alvo em UTC (convertendo a hora Brasília para UTC)
   const liberarEmUtcMs =
     Date.UTC(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo) -
     BRASILIA_OFFSET_MIN * 60_000;
@@ -184,13 +164,13 @@
 
     const rtt = t1 - t0;
     const estimatedLocalAtServer = t0 + rtt / 2;
-    netOffsetMs = serverMs - estimatedLocalAtServer;
 
+    netOffsetMs = serverMs - estimatedLocalAtServer;
     return { ok: true, rtt };
   }
 
   // =========================================================
-  // 4) VISUAL (sem flash) + classes de intensidade
+  // 4) VISUAL (SEM FLASH)
   // =========================================================
   function pulseBarBeat() {
     const fill = el("loadingFill");
@@ -201,20 +181,10 @@
   }
 
   function heartbeatVisualPulse() {
-    const target = document.querySelector(".panel") || document.body;
+    const target = document.body; // se quiser: troque por um wrapper específico
     target.classList.remove("hb-pulse");
     void target.offsetWidth;
     target.classList.add("hb-pulse");
-  }
-
-  function setIntensityClasses(secLeft, final60) {
-    const root = document.documentElement;
-
-    // controla estados do seu CSS
-    root.classList.toggle("final-phase", final60);
-    root.classList.toggle("final20", final60 && secLeft <= 20);
-    root.classList.toggle("final10", final60 && secLeft <= 10);
-    root.classList.toggle("final3", final60 && secLeft <= 3);
   }
 
   // =========================================================
@@ -279,7 +249,7 @@
   }
 
   // =========================================================
-  // 6) ÁUDIO (intro + heartbeat + loading) + detector de batida
+  // 6) ÁUDIO (intro + heartbeat + loading) + DETECTOR DE BATIDA
   // =========================================================
   const introMusic = new Audio(CONFIG.musicaSrc);
   introMusic.preload = "auto";
@@ -325,9 +295,7 @@
 
   function stopIntroNow() {
     stop(introMusic);
-    try {
-      introMusic.volume = CONFIG.musicaVolume;
-    } catch {}
+    try { introMusic.volume = CONFIG.musicaVolume; } catch {}
   }
 
   function fadeOutStopIntro(ms = 1200) {
@@ -351,7 +319,7 @@
     } catch {}
   }
 
-  // ---- Detector real (Analyser) p/ sincronizar pulso com o MP3 ----
+  // ---- Detector real (Analyser) para sincronizar visual com o MP3 ----
   let audioCtx = null;
   let heartSrcNode = null;
   let analyser = null;
@@ -369,7 +337,6 @@
     analyser.fftSize = 2048;
     analyserData = new Uint8Array(analyser.fftSize);
 
-    // rota: heart -> analyser -> destination
     heartSrcNode.connect(analyser);
     analyser.connect(audioCtx.destination);
   }
@@ -419,9 +386,7 @@
     stopIntroNow();
     stop(heart);
     stop(loadingMusic);
-    try {
-      heart.playbackRate = CONFIG.heartMinRate;
-    } catch {}
+    try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
     stopHeartbeatDetector();
   }
 
@@ -439,14 +404,12 @@
     }
 
     function enableAudioFromGate() {
-      // libera autoplay
       try {
         safePlay(introMusic);
         introMusic.pause();
         introMusic.currentTime = 0;
       } catch {}
 
-      // libera AudioContext pro analyser
       try {
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === "suspended") audioCtx.resume();
@@ -483,19 +446,16 @@
     done = true;
     if (interval) clearInterval(interval);
 
-    // entra no loading: para intro + coração, toca loading.mp3
     stopIntroNow();
     stop(heart);
-    try {
-      heart.playbackRate = CONFIG.heartMinRate;
-    } catch {}
+    try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
     stopHeartbeatDetector();
 
     safePlay(loadingMusic);
 
     allowPreload = true;
 
-    document.documentElement.classList.remove("final-phase", "glitching", "final20", "final10", "final3");
+    document.documentElement.classList.remove("final-phase", "glitching");
 
     const loading = el("loading");
     const fill = el("loadingFill");
@@ -525,7 +485,6 @@
       pulseBarBeat();
     });
 
-    // terminou: para loading.mp3 antes do redirect
     stop(loadingMusic);
 
     if (fill) fill.style.width = "100%";
@@ -558,54 +517,44 @@
       return;
     }
 
-    // seus “tremidos” (últimos 3s) — mantém
+    // mantém suas "tremidas" (glitching) do CSS
     document.documentElement.classList.toggle("glitching", diffMs <= 3000 && diffMs > 0);
 
     const final60 = diffMs <= 60000 && diffMs > 0;
-    const secLeft = Math.floor(diffMs / 1000);
+    document.documentElement.classList.toggle("final-phase", final60);
 
-    setIntensityClasses(secLeft, final60);
-
-    // entra nos 60s finais
     if (final60 && !tension60) {
       tension60 = true;
 
       fadeOutStopIntro(CONFIG.fadeStopMs);
 
-      try {
-        heart.playbackRate = CONFIG.heartMinRate;
-      } catch {}
-
+      try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
       safePlay(heart);
       startHeartbeatDetector();
     }
 
-    // sai dos 60s finais (se alguém voltar relógio e sync permitir)
     if (!final60 && tension60) {
       tension60 = false;
       stop(heart);
       stopHeartbeatDetector();
-      try {
-        heart.playbackRate = CONFIG.heartMinRate;
-      } catch {}
+      try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
     }
 
-    // aceleração do coração nos últimos 20s
     if (final60) {
+      const secLeft = Math.floor(diffMs / 1000);
+
       if (secLeft <= CONFIG.heartRampStartSec) {
-        const progress = 1 - secLeft / CONFIG.heartRampStartSec; // 0..1
-        const rate = CONFIG.heartMinRate + (CONFIG.heartMaxRate - CONFIG.heartMinRate) * progress;
-        try {
-          heart.playbackRate = Math.min(CONFIG.heartMaxRate, rate);
-        } catch {}
+        const progress = 1 - secLeft / CONFIG.heartRampStartSec;
+        const rate =
+          CONFIG.heartMinRate +
+          (CONFIG.heartMaxRate - CONFIG.heartMinRate) * progress;
+
+        try { heart.playbackRate = Math.min(CONFIG.heartMaxRate, rate); } catch {}
       } else {
-        try {
-          heart.playbackRate = CONFIG.heartMinRate;
-        } catch {}
+        try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
       }
     }
 
-    // contador
     const total = Math.floor(diffMs / 1000);
     const dias = Math.floor(total / 86400);
     const horas = Math.floor((total % 86400) / 3600);
@@ -630,7 +579,7 @@
       const r = await syncNetTime();
       setTimeBadge("ok", `HORA ONLINE ✓  RTT ${Math.round(r.rtt)}ms`);
     } catch (e) {
-      console.warn("[TIME] Falhou sync. Usando relógio local.", e);
+      console.warn("[TIME] Falhou sync (sem internet). Usando relógio local.", e);
       netOffsetMs = 0;
       setTimeBadge("bad", "HORA LOCAL (fallback)");
     }
@@ -647,9 +596,7 @@
       }, CONFIG.resyncEveryMs);
     }
 
-    // tenta tocar (vai falhar até o gesto; gate resolve)
     safePlayIntro();
-
     update();
     interval = setInterval(update, 250);
 
