@@ -100,7 +100,7 @@ function dropFX(durationMs = 1200) {
     redirectPara: new URL("./kpop/phases/index.html", window.location.href).toString(),
 
     // ===== MUSICA =====
-    musicaSrc: "../sounds/intro.mp3",
+    musicaSrc: "./sounds/intro.mp3",
     musicaVolume: 0.9,
     musicaComecarEm: 0,
 
