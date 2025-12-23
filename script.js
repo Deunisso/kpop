@@ -92,9 +92,9 @@ function dropFX(durationMs = 1200) {
     // data/hora do zero
     ano: 2025,
     mes: 12,
-    dia: 22,
-    hora: 23,
-    minuto: 12,
+    dia: 23,
+    hora: 20,
+    minuto: 0,
     segundo: 0,
 
     redirectPara: new URL("../phases/index.html", window.location.href).toString(),
