@@ -75,7 +75,69 @@
   }
 
   // =========================================================
-  // 4) TIME SYNC (anti trocar hora)
+  // 4) BADGE (indicador de sync online/local) — IGUAL O DO COUNTDOWN
+  // =========================================================
+  function injectTimeBadgeStylesOnce() {
+    if (document.getElementById("__timeBadgeStyles")) return;
+    const s = document.createElement("style");
+    s.id = "__timeBadgeStyles";
+    s.textContent = `
+      .time-badge{
+        position:fixed; z-index:99999;
+        top:14px; right:14px;
+        padding:8px 10px; border-radius:999px;
+        font:600 12px/1.0 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        letter-spacing:.2px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border:1px solid rgba(255,255,255,.16);
+        background: rgba(0,0,0,.35);
+        color:#fff;
+        display:flex; align-items:center; gap:8px;
+        user-select:none;
+        pointer-events:none;
+      }
+      .time-dot{
+        width:10px; height:10px; border-radius:50%;
+        box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      }
+      .time-dot.ok{ background:#32d74b; box-shadow: 0 0 18px rgba(50,215,75,.65); }
+      .time-dot.bad{ background:#ff453a; box-shadow: 0 0 18px rgba(255,69,58,.55); }
+      .time-dot.warn{ background:#ffd60a; box-shadow: 0 0 18px rgba(255,214,10,.55); }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function ensureTimeBadge() {
+    injectTimeBadgeStylesOnce();
+
+    let badge = document.getElementById("__timeBadge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "__timeBadge";
+      badge.className = "time-badge";
+      badge.innerHTML = `
+        <span class="time-dot warn" id="__timeDot"></span>
+        <span id="__timeText">SINCRONIZANDO…</span>
+      `;
+      document.body.appendChild(badge);
+    }
+    return badge;
+  }
+
+  function setTimeBadge(state, text) {
+    const badge = ensureTimeBadge();
+    const dot = badge.querySelector("#__timeDot");
+    const t = badge.querySelector("#__timeText");
+    if (dot) {
+      dot.classList.remove("ok", "bad", "warn");
+      dot.classList.add(state);
+    }
+    if (t) t.textContent = text;
+  }
+
+  // =========================================================
+  // 5) TIME SYNC (anti trocar hora)
   // =========================================================
   let netOffsetMs = 0;
 
@@ -96,6 +158,7 @@
 
     const rtt = t1 - t0;
     netOffsetMs = serverMs - (t0 + rtt / 2);
+    return { rtt };
   }
 
   function setFallbackLocalTime() {
@@ -103,7 +166,7 @@
   }
 
   // =========================================================
-  // 5) LOCK LOGIC
+  // 6) LOCK LOGIC
   // =========================================================
   function toUtcMsFromBrasilia({ y, m, d, hh, mm, ss }) {
     // Brasília = UTC-3 => UTC = horárioBrasília + 3h
@@ -128,7 +191,7 @@
   }
 
   // =========================================================
-  // 6) RENDER LOCK STATE (cards/dots) + overlay msg no card
+  // 7) RENDER LOCK STATE (cards/dots) + overlay msg no card
   // =========================================================
   function applyLocks() {
     cards.forEach((card, i) => {
@@ -137,7 +200,6 @@
       card.classList.toggle("locked", locked);
       card.setAttribute("aria-disabled", locked ? "true" : "false");
 
-      // texto em cima da imagem (CSS usa attr(data-lockmsg))
       if (locked) {
         const when = nextUnlockInfo(i);
         card.setAttribute("data-lockmsg", `🔒 LIBERA EM\n${when}`);
@@ -154,7 +216,7 @@
   }
 
   // =========================================================
-  // 7) CAROUSEL (navega livre, abrir é que bloqueia)
+  // 8) CAROUSEL (navega livre, abrir é que bloqueia)
   // =========================================================
   function updateCarousel(newIndex) {
     if (isAnimating) return;
@@ -186,7 +248,7 @@
 
     setTimeout(() => {
       memberName.textContent = teamMembers[currentIndex].name;
-      memberRole.textContent = teamMembers[currentIndex].role; // SEM mensagem de bloqueio aqui
+      memberRole.textContent = teamMembers[currentIndex].role;
       memberName.style.opacity = "1";
       memberRole.style.opacity = "1";
     }, 260);
@@ -195,7 +257,7 @@
   }
 
   // =========================================================
-  // 8) CONTROLES (setas / dots / teclado / swipe)
+  // 9) CONTROLES (setas / dots / teclado / swipe)
   // =========================================================
   upArrows.forEach((arrow) => {
     arrow.addEventListener("click", () => {
@@ -256,10 +318,9 @@
   });
 
   // =========================================================
-  // 9) CLICK NO CARD (SEM TOAST)
+  // 10) CLICK NO CARD (SEM TOAST)
   // =========================================================
   function handleOpenIndex(i) {
-    // 🔇 Sem toast: se estiver locked, só não abre.
     if (!isUnlocked(i)) return;
 
     const destino = caminhos[i];
@@ -285,7 +346,7 @@
   });
 
   // =========================================================
-  // 10) Indicador de scroll (seu)
+  // 11) Indicador de scroll (seu)
   // =========================================================
   function createScrollIndicator() {
     const indicator = document.createElement("div");
@@ -296,22 +357,28 @@
   createScrollIndicator();
 
   // =========================================================
-  // 11) INIT + Sync Time + aplicar locks
+  // 12) INIT + Sync Time + aplicar locks + badge
   // =========================================================
   async function initTime() {
+    ensureTimeBadge();
     try {
-      await syncNetTime();
+      setTimeBadge("warn", "SINCRONIZANDO…");
+      const r = await syncNetTime();
+      setTimeBadge("ok", `HORA ONLINE ✓  RTT ${Math.round(r.rtt)}ms`);
     } catch (e) {
       console.warn("[TIME] Falhou sync, usando relógio local.", e);
       setFallbackLocalTime();
+      setTimeBadge("bad", "HORA LOCAL (fallback)");
     }
 
     if (RESYNC_EVERY_MS > 0) {
       setInterval(async () => {
         try {
-          await syncNetTime();
+          const r = await syncNetTime();
+          setTimeBadge("ok", `HORA ONLINE ✓  RTT ${Math.round(r.rtt)}ms`);
         } catch {
           setFallbackLocalTime();
+          setTimeBadge("bad", "HORA LOCAL (fallback)");
         }
 
         applyLocks();
@@ -320,10 +387,24 @@
     }
   }
 
+  // primeiro render
   applyLocks();
   updateCarousel(0);
+
+  // sincroniza e reaplica
   initTime().then(() => {
     applyLocks();
     updateCarousel(currentIndex);
   });
+
+  // se voltar pro tab, recalcula sem esperar 30s
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      applyLocks();
+      updateCarousel(currentIndex);
+    }
+  });
+
+  // debug opcional
+  window.__SPOTAY_TIME__ = { RELEASES, TIME_API, RESYNC_EVERY_MS, get netOffsetMs() { return netOffsetMs; } };
 })();
