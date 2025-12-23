@@ -42,10 +42,15 @@
   let isAnimating = false;
 
   // =========================================================
-  // 3) ÁUDIO NAV
+  // 3) ÁUDIOS (nav + erro locked)
   // =========================================================
   const soundUp = new Audio("../sounds/up.mp3");
   const soundDown = new Audio("../sounds/down.mp3");
+
+  // 🔴 som de erro ao clicar em card bloqueado
+  const soundLockedFX = new Audio("../sounds/locked.mp3"); // troque se quiser
+  soundLockedFX.volume = 0.55;
+
   soundUp.volume = 0.5;
   soundDown.volume = 0.5;
 
@@ -54,8 +59,18 @@
     if (audioUnlocked) return;
     audioUnlocked = true;
 
-    soundUp.play().then(() => { soundUp.pause(); soundUp.currentTime = 0; }).catch(() => {});
-    soundDown.play().then(() => { soundDown.pause(); soundDown.currentTime = 0; }).catch(() => {});
+    // desbloqueia os 3 sem tocar de verdade (play/pause)
+    const warm = (a) =>
+      a.play()
+        .then(() => {
+          a.pause();
+          a.currentTime = 0;
+        })
+        .catch(() => {});
+
+    warm(soundUp);
+    warm(soundDown);
+    warm(soundLockedFX);
   }
   document.addEventListener("touchstart", unlockAudioOnce, { once: true });
   document.addEventListener("click", unlockAudioOnce, { once: true });
@@ -71,11 +86,29 @@
     s.currentTime = 0;
     s.play().catch(() => {});
 
-    setTimeout(() => { soundLocked = false; }, SOUND_DELAY);
+    setTimeout(() => {
+      soundLocked = false;
+    }, SOUND_DELAY);
+  }
+
+  // throttle separado pro erro locked (pra não virar metralhadora)
+  let lockedSfxGuard = false;
+  const LOCKED_SFX_DELAY = 350;
+
+  function playLockedSfx() {
+    if (lockedSfxGuard) return;
+    lockedSfxGuard = true;
+
+    soundLockedFX.currentTime = 0;
+    soundLockedFX.play().catch(() => {});
+
+    setTimeout(() => {
+      lockedSfxGuard = false;
+    }, LOCKED_SFX_DELAY);
   }
 
   // =========================================================
-  // 4) BADGE (indicador de sync online/local) — IGUAL O DO COUNTDOWN
+  // 4) BADGE (indicador de sync online/local)
   // =========================================================
   function injectTimeBadgeStylesOnce() {
     if (document.getElementById("__timeBadgeStyles")) return;
@@ -216,7 +249,28 @@
   }
 
   // =========================================================
-  // 8) CAROUSEL (navega livre, abrir é que bloqueia)
+  // 8) FX DE CLIQUE EM LOCKED (tremer + vermelho + som)
+  // =========================================================
+  function lockedClickFX(card) {
+    // remove se estiver repetindo clique muito rápido
+    card.classList.remove("shake", "redflash");
+
+    // força reflow pra reiniciar a animação
+    void card.offsetWidth;
+
+    card.classList.add("shake", "redflash");
+
+    // som de erro
+    playLockedSfx();
+
+    // limpa depois
+    setTimeout(() => {
+      card.classList.remove("shake", "redflash");
+    }, 520);
+  }
+
+  // =========================================================
+  // 9) CAROUSEL (navega livre, abrir é que bloqueia)
   // =========================================================
   function updateCarousel(newIndex) {
     if (isAnimating) return;
@@ -253,11 +307,13 @@
       memberRole.style.opacity = "1";
     }, 260);
 
-    setTimeout(() => { isAnimating = false; }, 800);
+    setTimeout(() => {
+      isAnimating = false;
+    }, 800);
   }
 
   // =========================================================
-  // 9) CONTROLES (setas / dots / teclado / swipe)
+  // 10) CONTROLES (setas / dots / teclado / swipe)
   // =========================================================
   upArrows.forEach((arrow) => {
     arrow.addEventListener("click", () => {
@@ -318,7 +374,7 @@
   });
 
   // =========================================================
-  // 10) CLICK NO CARD (SEM TOAST)
+  // 11) CLICK NO CARD (com FX quando locked)
   // =========================================================
   function handleOpenIndex(i) {
     if (!isUnlocked(i)) return;
@@ -329,6 +385,10 @@
   }
 
   function handleOpenCurrent() {
+    if (!isUnlocked(currentIndex)) {
+      lockedClickFX(cards[currentIndex]);
+      return;
+    }
     handleOpenIndex(currentIndex);
   }
 
@@ -336,17 +396,25 @@
     card.addEventListener("click", (e) => {
       e.stopPropagation();
 
+      // se clicou em um card que não é o atual: só navega
       if (i !== currentIndex) {
         updateCarousel(i);
         return;
       }
 
+      // se é o atual e está bloqueado: treme + vermelho + som e NÃO abre
+      if (!isUnlocked(i)) {
+        lockedClickFX(card);
+        return;
+      }
+
+      // se liberado: abre normal
       handleOpenIndex(i);
     });
   });
 
   // =========================================================
-  // 11) Indicador de scroll (seu)
+  // 12) Indicador de scroll (seu)
   // =========================================================
   function createScrollIndicator() {
     const indicator = document.createElement("div");
@@ -357,7 +425,7 @@
   createScrollIndicator();
 
   // =========================================================
-  // 12) INIT + Sync Time + aplicar locks + badge
+  // 13) INIT + Sync Time + aplicar locks + badge
   // =========================================================
   async function initTime() {
     ensureTimeBadge();
@@ -406,5 +474,12 @@
   });
 
   // debug opcional
-  window.__SPOTAY_TIME__ = { RELEASES, TIME_API, RESYNC_EVERY_MS, get netOffsetMs() { return netOffsetMs; } };
+  window.__SPOTAY_TIME__ = {
+    RELEASES,
+    TIME_API,
+    RESYNC_EVERY_MS,
+    get netOffsetMs() {
+      return netOffsetMs;
+    },
+  };
 })();

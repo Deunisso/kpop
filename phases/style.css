@@ -537,3 +537,53 @@ body {
     padding: 14px;
   }
 }
+
+/* ============================
+   LOCK CLICK FEEDBACK (shake + red)
+   ============================ */
+
+/* garante que o card possa receber animação sem "quebrar" o layout */
+.card{
+  will-change: transform, filter;
+}
+
+/* quando clicar em LOCKED: treme */
+.card.locked.shake{
+  animation: lockedShake .45s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* flash vermelho por cima (mantém seu ::after de texto) */
+.card.locked.redflash::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: rgba(255, 0, 60, .28);
+  box-shadow: inset 0 0 0 2px rgba(255, 0, 60, .55);
+  pointer-events:none;
+  z-index: 2; /* fica acima da imagem */
+  animation: lockedFlash .45s ease both;
+}
+
+/* seu texto do lock está no ::after — garante ele acima do flash */
+.card.locked::after{
+  z-index: 3;
+  position: absolute;
+}
+
+/* animação de tremer (não depende do transform base do card) */
+@keyframes lockedShake{
+  0%   { transform: translateX(0) scale(1.1) translateZ(0); }
+  15%  { transform: translateX(-10px) scale(1.1) translateZ(0); }
+  30%  { transform: translateX(10px)  scale(1.1) translateZ(0); }
+  45%  { transform: translateX(-8px)  scale(1.1) translateZ(0); }
+  60%  { transform: translateX(8px)   scale(1.1) translateZ(0); }
+  75%  { transform: translateX(-5px)  scale(1.1) translateZ(0); }
+  100% { transform: translateX(0)     scale(1.1) translateZ(0); }
+}
+
+/* flash vermelho */
+@keyframes lockedFlash{
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
