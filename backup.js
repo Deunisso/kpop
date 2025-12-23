@@ -36,13 +36,17 @@
 
     // ===== PRELOAD =====
     perFileDelayMs: 300,
-    assets: window.ASSETS_MANIFEST || [],
-
-    // ✅ HORA "REAL" (CORS OK) — GitHub Pages
-    // Usa WorldTimeAPI (America/Sao_Paulo)
-    timeApi: "https://worldtimeapi.org/api/timezone/America/Sao_Paulo",
-    resyncEveryMs: 30_000
+    assets: window.ASSETS_MANIFEST || []
   };
+
+  const liberarEm = new Date(
+    CONFIG.ano,
+    CONFIG.mes - 1,
+    CONFIG.dia,
+    CONFIG.hora,
+    CONFIG.minuto,
+    CONFIG.segundo
+  );
 
   const el = (id) => document.getElementById(id);
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -59,52 +63,14 @@
     if (n) n.textContent = v;
   }
 
+  function remainingMs() {
+    return liberarEm - new Date();
+  }
+
   setText("loadingTitle", CONFIG.nomeProjeto);
 
   // =========================================================
-  // 2) HORA "REAL" (ANTI TROCAR HORA DO CELULAR)
-  // =========================================================
-  // Offset em ms: serverNow - localNow
-  let netOffsetMs = 0;
-
-  function netNowMs() {
-    return Date.now() + netOffsetMs;
-  }
-
-  // Alvo em Brasília (UTC-3 fixo)
-  // (BR não usa horário de verão atualmente; se isso mudar, recomendo mover "liberarEmUtcMs" pro servidor)
-  const BRASILIA_OFFSET_MIN = -180;
-  const liberarEmUtcMs =
-    Date.UTC(CONFIG.ano, CONFIG.mes - 1, CONFIG.dia, CONFIG.hora, CONFIG.minuto, CONFIG.segundo) -
-    BRASILIA_OFFSET_MIN * 60_000;
-
-  function remainingMs() {
-    return liberarEmUtcMs - netNowMs();
-  }
-
-  async function syncNetTime() {
-    const t0 = Date.now();
-    const r = await fetch(CONFIG.timeApi, { cache: "no-store" });
-    const t1 = Date.now();
-
-    if (!r.ok) throw new Error("Falha WorldTimeAPI");
-
-    const data = await r.json();
-
-    // WorldTimeAPI fornece unixtime (segundos)
-    const serverMs = Number(data.unixtime) * 1000;
-    if (!Number.isFinite(serverMs)) throw new Error("WorldTimeAPI inválida");
-
-    // Ajuste por RTT (meio caminho)
-    const rtt = t1 - t0;
-    const estimatedLocalAtServer = t0 + rtt / 2;
-
-    netOffsetMs = serverMs - estimatedLocalAtServer;
-    return true;
-  }
-
-  // =========================================================
-  // 3) VISUAL
+  // 2) VISUAL
   // =========================================================
   function dropFX(durationMs = 1200) {
     const flash = el("flash");
@@ -122,7 +88,7 @@
   }
 
   // =========================================================
-  // 4) PRELOAD
+  // 3) PRELOAD
   // =========================================================
   function isImage(url) {
     return /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(url);
@@ -176,14 +142,19 @@
       }
 
       doneCount++;
-      if (typeof onProgress === "function") onProgress({ done: doneCount, total, url, ok });
 
-      if (CONFIG.perFileDelayMs > 0) await wait(CONFIG.perFileDelayMs);
+      if (typeof onProgress === "function") {
+        onProgress({ done: doneCount, total, url, ok });
+      }
+
+      if (CONFIG.perFileDelayMs > 0) {
+        await wait(CONFIG.perFileDelayMs);
+      }
     }
   }
 
   // =========================================================
-  // 5) ÁUDIO (intro + heartbeat + loading)
+  // 4) ÁUDIO (intro + heartbeat + loading)
   // =========================================================
   const introMusic = new Audio(CONFIG.musicaSrc);
   introMusic.preload = "auto";
@@ -229,7 +200,9 @@
 
   function stopIntroNow() {
     stop(introMusic);
-    try { introMusic.volume = CONFIG.musicaVolume; } catch {}
+    try {
+      introMusic.volume = CONFIG.musicaVolume;
+    } catch {}
   }
 
   function fadeOutStopIntro(ms = 1200) {
@@ -257,11 +230,13 @@
     stopIntroNow();
     stop(heart);
     stop(loadingMusic);
-    try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+    try {
+      heart.playbackRate = CONFIG.heartMinRate;
+    } catch {}
   }
 
   // =========================================================
-  // 6) AUDIO GATE (botão OK)
+  // 5) AUDIO GATE (botão OK)
   // =========================================================
   function setupAudioGate() {
     const audioGate = el("audioGate");
@@ -297,11 +272,20 @@
   }
 
   // =========================================================
-  // 7) RELEASES
+  // 6) RELEASES (para áudio no loading / redirect)
   // =========================================================
   function releaseFastNoLoading() {
     stopAllAudio();
+
+    const flash = el("flash");
+    if (flash) {
+      flash.classList.add("on");
+      setTimeout(() => flash.classList.remove("on"), 180);
+    }
+
     document.body.classList.add("page-exit");
+    console.log("[DROP] Finalizado sem loading, redirecionando...");
+
     setTimeout(() => window.location.replace(CONFIG.redirectPara), 450);
   }
 
@@ -312,9 +296,12 @@
     done = true;
     if (interval) clearInterval(interval);
 
+    // entrou no loading: para intro + coração, toca loading.mp3
     stopIntroNow();
     stop(heart);
-    try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+    try {
+      heart.playbackRate = CONFIG.heartMinRate;
+    } catch {}
 
     safePlay(loadingMusic);
 
@@ -350,6 +337,7 @@
       pulseBarBeat();
     });
 
+    // terminou: para loading.mp3 antes de sair
     stop(loadingMusic);
 
     if (fill) fill.style.width = "100%";
@@ -357,6 +345,8 @@
     if (sub) sub.textContent = "Abrindo…";
 
     dropFX(2200);
+
+    console.log("[DROP] Preload concluído, redirecionando...");
 
     document.body.classList.add("page-exit");
     setTimeout(() => {
@@ -366,21 +356,29 @@
   }
 
   // =========================================================
-  // 8) LOOP PRINCIPAL
+  // 7) LOOP PRINCIPAL
+  // - intro toca antes dos 60s finais
+  // - nos 60s finais: intro para (fade) e toca coração
+  // - nos últimos 20s: coração acelera via playbackRate
+  // - ao entrar no loading: coração para e loading.mp3 toca
   // =========================================================
   function update() {
     if (done) return;
 
     const diffMs = remainingMs();
+
     if (diffMs > 0) seenPositive = true;
 
     if (diffMs <= 0) {
       done = true;
       if (interval) clearInterval(interval);
 
+      // garantia: ao zerar não fica som sobrando
       stopAllAudio();
+
       if (!seenPositive) releaseFastNoLoading();
       else releaseWithLoading();
+
       return;
     }
 
@@ -389,12 +387,16 @@
     const final60 = diffMs <= 60000 && diffMs > 0;
     document.documentElement.classList.toggle("final-phase", final60);
 
+    // entrou nos 60s finais
     if (final60 && !tension60) {
       tension60 = true;
 
+      // para música (fade) e inicia coração
       fadeOutStopIntro(CONFIG.fadeStopMs);
 
-      try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+      try {
+        heart.playbackRate = CONFIG.heartMinRate;
+      } catch {}
       safePlay(heart);
 
       dropFX(900);
@@ -405,27 +407,37 @@
       }
     }
 
+    // se voltar no tempo (sai dos 60s finais)
     if (!final60 && tension60) {
       tension60 = false;
       stop(heart);
-      try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+      try {
+        heart.playbackRate = CONFIG.heartMinRate;
+      } catch {}
+      // (não força tocar intro automaticamente: depende do gate/usuário)
     }
 
+    // aceleração do coração nos últimos 20s
     if (final60) {
       const secLeft = Math.floor(diffMs / 1000);
 
       if (secLeft <= CONFIG.heartRampStartSec) {
-        const progress = 1 - secLeft / CONFIG.heartRampStartSec;
+        const progress = 1 - secLeft / CONFIG.heartRampStartSec; // 0..1
         const rate =
           CONFIG.heartMinRate +
           (CONFIG.heartMaxRate - CONFIG.heartMinRate) * progress;
 
-        try { heart.playbackRate = Math.min(CONFIG.heartMaxRate, rate); } catch {}
+        try {
+          heart.playbackRate = Math.min(CONFIG.heartMaxRate, rate);
+        } catch {}
       } else {
-        try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+        try {
+          heart.playbackRate = CONFIG.heartMinRate;
+        } catch {}
       }
     }
 
+    // contador
     const total = Math.floor(diffMs / 1000);
     const dias = Math.floor(total / 86400);
     const horas = Math.floor((total % 86400) / 3600);
@@ -439,34 +451,16 @@
   }
 
   // =========================================================
-  // INIT
+  // 8) INIT
   // =========================================================
-  (async () => {
-    setupAudioGate();
+  setupAudioGate();
+  safePlayIntro(); // tenta tocar (só funciona após gesto; gate cuida disso)
+  update();
+  interval = setInterval(update, 250);
 
-    // 🔒 sync inicial (anti-burlar relógio)
-    try {
-      await syncNetTime();
-    } catch (e) {
-      console.warn("[TIME] Falhou sync (sem internet/CORS). Usando relógio local.", e);
-      netOffsetMs = 0;
-    }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) update();
+  });
 
-    // re-sync periódico
-    if (CONFIG.resyncEveryMs > 0) {
-      setInterval(() => {
-        syncNetTime().catch(() => {});
-      }, CONFIG.resyncEveryMs);
-    }
-
-    safePlayIntro();
-    update();
-    interval = setInterval(update, 250);
-
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) update();
-    });
-
-    window.__COUNTDOWN__ = { CONFIG, liberarEmUtcMs, netOffsetMs };
-  })();
+  window.__COUNTDOWN__ = { CONFIG, liberarEm };
 })();
