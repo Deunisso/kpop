@@ -10,9 +10,9 @@
     ano: 2025,
     mes: 12,
     dia: 23,
-    hora: 19,
-    minuto: 29,
-    segundo: 50,
+    hora: 20,
+    minuto: 30,
+    segundo: 0,
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
 
