@@ -663,3 +663,85 @@ body{
   from { transform: scale(1); filter: brightness(1.0) blur(.35px); }
   to   { transform: scale(1.02); filter: brightness(1.9) blur(.10px); }
 }
+
+/* =========================================================
+   INTENSIDADE FINAL (controlado pelo JS)
+   classes: .final20 .final10 .final3 (no <html>)
+   ========================================================= */
+
+/* 1) BEAMS: mais rápidos conforme aproxima do 0 */
+.final20 .beam-1,
+.final20 .beam-2,
+.final20 .beam-3,
+.final20 .beam-4,
+.final20 .beam-5,
+.final20 .beam-6{
+  animation-duration: 2.2s !important;
+}
+
+.final10 .beam-1,
+.final10 .beam-2,
+.final10 .beam-3,
+.final10 .beam-4,
+.final10 .beam-5,
+.final10 .beam-6{
+  animation-duration: 1.35s !important;
+}
+
+.final3 .beam-1,
+.final3 .beam-2,
+.final3 .beam-3,
+.final3 .beam-4,
+.final3 .beam-5,
+.final3 .beam-6{
+  animation-duration: .85s !important;
+}
+
+/* 2) STARFIELDS: mais brilho/vida no final */
+.final20 .starfield{ opacity: 1 !important; }
+.final20 .starfield-1{ opacity: .98 !important; }
+.final20 .starfield-2{ opacity: .90 !important; filter: blur(.15px) !important; }
+.final20 .starfield-3{ opacity: .92 !important; }
+
+.final10 .starfield-1{ opacity: 1 !important; }
+.final10 .starfield-2{ opacity: .98 !important; }
+.final10 .starfield-3{
+  opacity: 1 !important;
+  animation-duration: 2.6s !important; /* pisca mais rápido */
+}
+
+.final3 .starfield-3{
+  animation-duration: 1.7s !important; /* bem mais intenso */
+}
+
+/* 3) Reduz “brilho exagerado” do panel (mantém vibe, menos estourado) */
+.final-phase .panel{
+  animation: pulseGlow .95s infinite;
+}
+@keyframes pulseGlow{
+  0%,100%{
+    box-shadow:
+      0 0 30px rgba(0,245,255,.22),
+      0 30px 110px rgba(0,0,0,.72);
+  }
+  50%{
+    box-shadow:
+      0 0 70px rgba(255,43,214,.35),
+      0 30px 110px rgba(0,0,0,.72);
+  }
+}
+
+/* 4) Mantém glitch lindo — só dá um “kick” no final */
+.final3.glitching #headline{
+  animation-duration: .14s;
+}
+
+/* 5) (Opcional) beams mais “stage” sem estourar */
+.final10 .beam{
+  opacity: .95;
+  filter: blur(.08px) saturate(1.25) brightness(1.08);
+}
+.final3 .beam{
+  opacity: 1;
+  filter: blur(.06px) saturate(1.3) brightness(1.12);
+}
