@@ -587,3 +587,36 @@ body {
   20%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ============================
+   LOCKED DIAGONAL ROTATE FX
+   ============================ */
+
+.card.locked.shake{
+  animation: lockedShakeDiagonal .55s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* animação: treme + gira em diagonal */
+@keyframes lockedShakeDiagonal{
+  0% {
+    transform: translateX(0) rotateZ(0deg) rotateX(0deg) scale(1.1);
+  }
+  15% {
+    transform: translateX(-10px) rotateZ(-2deg) rotateX(3deg) scale(1.1);
+  }
+  30% {
+    transform: translateX(10px) rotateZ(2deg) rotateX(-3deg) scale(1.1);
+  }
+  45% {
+    transform: translateX(-8px) rotateZ(-1.5deg) rotateX(2deg) scale(1.1);
+  }
+  60% {
+    transform: translateX(8px) rotateZ(1.5deg) rotateX(-2deg) scale(1.1);
+  }
+  75% {
+    transform: translateX(-4px) rotateZ(-1deg) rotateX(1deg) scale(1.1);
+  }
+  100% {
+    transform: translateX(0) rotateZ(0deg) rotateX(0deg) scale(1.1);
+  }
+}
