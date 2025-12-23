@@ -1,10 +1,5 @@
 (() => {
   // =========================================================
-  // 0) AVISO: seu HTML está com <html> dentro de <html>.
-  // Isso não quebra tudo, mas pode causar comportamento estranho.
-  // =========================================================
-
-  // =========================================================
   // 1) CONFIG HORÁRIOS (Brasília, anti trocar hora do celular)
   // =========================================================
   const RELEASES = {
@@ -14,7 +9,6 @@
     4: { y: 2025, m: 12, d: 27, hh: 20, mm: 0, ss: 0 }, // Phase 5
   };
 
-  // Fallback: se a internet falhar, usa relógio local
   const TIME_API = "https://worldtimeapi.org/api/timezone/America/Sao_Paulo";
   const RESYNC_EVERY_MS = 30_000;
 
@@ -60,12 +54,8 @@
     if (audioUnlocked) return;
     audioUnlocked = true;
 
-    soundUp.play()
-      .then(() => { soundUp.pause(); soundUp.currentTime = 0; })
-      .catch(() => {});
-    soundDown.play()
-      .then(() => { soundDown.pause(); soundDown.currentTime = 0; })
-      .catch(() => {});
+    soundUp.play().then(() => { soundUp.pause(); soundUp.currentTime = 0; }).catch(() => {});
+    soundDown.play().then(() => { soundDown.pause(); soundDown.currentTime = 0; }).catch(() => {});
   }
   document.addEventListener("touchstart", unlockAudioOnce, { once: true });
   document.addEventListener("click", unlockAudioOnce, { once: true });
@@ -88,7 +78,6 @@
   // 4) TIME SYNC (anti trocar hora)
   // =========================================================
   let netOffsetMs = 0;
-  let timeState = "warn"; // ok | bad | warn
 
   function netNowMs() {
     return Date.now() + netOffsetMs;
@@ -105,18 +94,12 @@
     const serverMs = Number(data.unixtime) * 1000;
     if (!Number.isFinite(serverMs)) throw new Error("TIME API inválida");
 
-    // estimar atraso de rede
     const rtt = t1 - t0;
-    const estimatedLocalAtServer = t0 + rtt / 2;
-    netOffsetMs = serverMs - estimatedLocalAtServer;
-
-    timeState = "ok";
-    return { ok: true, rtt };
+    netOffsetMs = serverMs - (t0 + rtt / 2);
   }
 
   function setFallbackLocalTime() {
     netOffsetMs = 0;
-    timeState = "bad";
   }
 
   // =========================================================
@@ -128,14 +111,10 @@
   }
 
   function isUnlocked(index) {
-    // phase1 sempre liberada
-    if (index === 0) return true;
-
+    if (index === 0) return true; // Phase 1 sempre liberada
     const rel = RELEASES[index];
-    if (!rel) return true; // se não definiu, não bloqueia
-
-    const unlockAtUtc = toUtcMsFromBrasilia(rel);
-    return netNowMs() >= unlockAtUtc;
+    if (!rel) return true;
+    return netNowMs() >= toUtcMsFromBrasilia(rel);
   }
 
   function nextUnlockInfo(index) {
@@ -149,24 +128,7 @@
   }
 
   // =========================================================
-  // 6) UI: toast avisando bloqueio
-  // =========================================================
-  let toastTimer = null;
-  function showLockToast(msg) {
-    let t = document.querySelector(".lock-toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.className = "lock-toast";
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.add("on");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("on"), 1700);
-  }
-
-  // =========================================================
-  // 7) RENDER LOCK STATE (cards/dots) + overlay msg no card
+  // 6) RENDER LOCK STATE (cards/dots) + overlay msg no card
   // =========================================================
   function applyLocks() {
     cards.forEach((card, i) => {
@@ -175,7 +137,7 @@
       card.classList.toggle("locked", locked);
       card.setAttribute("aria-disabled", locked ? "true" : "false");
 
-      // ✅ texto que aparece em cima da imagem (CSS usa attr(data-lockmsg))
+      // texto em cima da imagem (CSS usa attr(data-lockmsg))
       if (locked) {
         const when = nextUnlockInfo(i);
         card.setAttribute("data-lockmsg", `🔒 LIBERA EM\n${when}`);
@@ -192,19 +154,12 @@
   }
 
   // =========================================================
-  // 8) CAROUSEL (navega livre, abrir é que bloqueia)
+  // 7) CAROUSEL (navega livre, abrir é que bloqueia)
   // =========================================================
-  function updateCarousel(newIndex, { allowLocked = true } = {}) {
+  function updateCarousel(newIndex) {
     if (isAnimating) return;
 
     const target = (newIndex + cards.length) % cards.length;
-
-    // modo opcional "não permitir locked"
-    if (!allowLocked && !isUnlocked(target)) {
-      const when = nextUnlockInfo(target);
-      showLockToast(`🔒 ${teamMembers[target].role} libera em ${when}`);
-      return;
-    }
 
     isAnimating = true;
     currentIndex = target;
@@ -229,49 +184,44 @@
     memberName.style.opacity = "0";
     memberRole.style.opacity = "0";
 
-	setTimeout(() => {
-	memberName.textContent = teamMembers[currentIndex].name;
-
-	// ✅ SEM mensagem de bloqueio aqui
-	memberRole.textContent = teamMembers[currentIndex].role;
-
-	memberName.style.opacity = "1";
-	memberRole.style.opacity = "1";
-	}, 260);
+    setTimeout(() => {
+      memberName.textContent = teamMembers[currentIndex].name;
+      memberRole.textContent = teamMembers[currentIndex].role; // SEM mensagem de bloqueio aqui
+      memberName.style.opacity = "1";
+      memberRole.style.opacity = "1";
+    }, 260);
 
     setTimeout(() => { isAnimating = false; }, 800);
   }
 
   // =========================================================
-  // 9) CONTROLES (setas / dots / teclado / swipe)
+  // 8) CONTROLES (setas / dots / teclado / swipe)
   // =========================================================
   upArrows.forEach((arrow) => {
     arrow.addEventListener("click", () => {
       playNavSound("up");
-      updateCarousel(currentIndex - 1, { allowLocked: true });
+      updateCarousel(currentIndex - 1);
     });
   });
 
   downArrows.forEach((arrow) => {
     arrow.addEventListener("click", () => {
       playNavSound("down");
-      updateCarousel(currentIndex + 1, { allowLocked: true });
+      updateCarousel(currentIndex + 1);
     });
   });
 
   dots.forEach((dot, i) => {
-    dot.addEventListener("click", () => {
-      updateCarousel(i, { allowLocked: true });
-    });
+    dot.addEventListener("click", () => updateCarousel(i));
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "ArrowUp") {
       playNavSound("up");
-      updateCarousel(currentIndex - 1, { allowLocked: true });
+      updateCarousel(currentIndex - 1);
     } else if (e.key === "ArrowDown") {
       playNavSound("down");
-      updateCarousel(currentIndex + 1, { allowLocked: true });
+      updateCarousel(currentIndex + 1);
     } else if (e.key === "Enter") {
       handleOpenCurrent();
     }
@@ -288,10 +238,10 @@
     if (Math.abs(diff) > swipeThreshold) {
       if (diff > 0) {
         playNavSound("down");
-        updateCarousel(currentIndex + 1, { allowLocked: true });
+        updateCarousel(currentIndex + 1);
       } else {
         playNavSound("up");
-        updateCarousel(currentIndex - 1, { allowLocked: true });
+        updateCarousel(currentIndex - 1);
       }
     }
   }
@@ -306,16 +256,12 @@
   });
 
   // =========================================================
-  // 10) CLICK NO CARD:
-  // - clicar em card fora do centro só centraliza
-  // - clicar no centro tenta abrir (se locked: toast + overlay já aparece)
+  // 9) CLICK NO CARD (SEM TOAST)
   // =========================================================
   function handleOpenIndex(i) {
-    if (!isUnlocked(i)) {
-      const when = nextUnlockInfo(i);
-      showLockToast(`🔒 ${teamMembers[i].role} libera em ${when}`);
-      return;
-    }
+    // 🔇 Sem toast: se estiver locked, só não abre.
+    if (!isUnlocked(i)) return;
+
     const destino = caminhos[i];
     if (!destino) return;
     window.location.href = destino;
@@ -330,7 +276,7 @@
       e.stopPropagation();
 
       if (i !== currentIndex) {
-        updateCarousel(i, { allowLocked: true });
+        updateCarousel(i);
         return;
       }
 
@@ -339,7 +285,7 @@
   });
 
   // =========================================================
-  // 11) Indicador de scroll (seu)
+  // 10) Indicador de scroll (seu)
   // =========================================================
   function createScrollIndicator() {
     const indicator = document.createElement("div");
@@ -350,7 +296,7 @@
   createScrollIndicator();
 
   // =========================================================
-  // 12) INIT + Sync Time + aplicar locks
+  // 11) INIT + Sync Time + aplicar locks
   // =========================================================
   async function initTime() {
     try {
@@ -360,7 +306,6 @@
       setFallbackLocalTime();
     }
 
-    // re-sync contínuo
     if (RESYNC_EVERY_MS > 0) {
       setInterval(async () => {
         try {
@@ -370,18 +315,15 @@
         }
 
         applyLocks();
-
-        // se destravar enquanto o usuário está vendo, atualiza textos
-        updateCarousel(currentIndex, { allowLocked: true });
+        updateCarousel(currentIndex);
       }, RESYNC_EVERY_MS);
     }
   }
 
-  // inicializa
   applyLocks();
-  updateCarousel(0, { allowLocked: true });
+  updateCarousel(0);
   initTime().then(() => {
     applyLocks();
-    updateCarousel(currentIndex, { allowLocked: true });
+    updateCarousel(currentIndex);
   });
 })();

@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================================================
 function ensureUnlockedOrReturn() {
   if (pageUnlocked) return true;
-  // NÃO cria mensagem/lock aqui, porque o lock já está na tela.
+  createPageLock();
   hardStopAudio();
   return false;
 }
