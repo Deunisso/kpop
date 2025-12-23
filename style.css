@@ -658,3 +658,8 @@ body{
     0 0 160px rgba(255,43,214,.28),
     0 30px 110px rgba(0,0,0,.75);
 }
+
+@keyframes starPulseFast{
+  from { transform: scale(1); filter: brightness(1.0) blur(.35px); }
+  to   { transform: scale(1.02); filter: brightness(1.9) blur(.10px); }
+}
