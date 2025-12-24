@@ -16,12 +16,28 @@
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
 
-    // ===== MÚSICA (antes dos 60s finais) =====
-    musicaSrc: "./sounds/intro.mp3",
+    // ===== PLAYLIST (PHASE 1) =====
+    musicFolder: "./phase1/music/",
+    musicList: [
+      "Black.mp3",
+      "Blue.mp3",
+      "Gauntlet.mp3",
+      "Green.mp3",
+      "Orange.mp3",
+      "Purple.mp3",
+      "Red.mp3",
+      "Yellow.mp3",
+    ],
     musicaVolume: 0.9,
-    musicaComecarEm: 0,
-    blockMusicUnderMs: 60000,
-    fadeStopMs: 1200,
+    blockMusicUnderMs: 60000,   // NUNCA tocar música se <= 60s
+    fadeStopMs: 1200,           // fade out ao entrar nos 60s finais
+
+    // ✅ Crossfade entre músicas
+    crossfadeMs: 1800,          // duração do crossfade entre tracks
+    gapBetweenTracksMs: 0,      // se quiser silêncio entre músicas
+
+    // ✅ Lembrar última música
+    rememberKey: "__DROP_LAST_TRACK_INDEX__",
 
     // ===== CORAÇÃO (nos 60s finais) =====
     heartSrc: "./sounds/heartbeat.mp3",
@@ -38,14 +54,14 @@
     perFileDelayMs: 300,
     assets: window.ASSETS_MANIFEST || [],
 
-    // ✅ HORA "REAL" (CORS OK) — GitHub Pages
+    // ✅ HORA "REAL"
     timeApi: "https://worldtimeapi.org/api/timezone/America/Sao_Paulo",
     resyncEveryMs: 30_000,
 
     // ===== HEART VISUAL SYNC (detecção de batida via Analyser) =====
-    beatThreshold: 26,     // sensibilidade (20~40). Menor = mais sensível
-    beatCooldownMs: 120,   // mínimo entre pulsos (ms)
-    beatPulseMs: 140       // duração do pulso visual (ms)
+    beatThreshold: 26,
+    beatCooldownMs: 120,
+    beatPulseMs: 140
   };
 
   const el = (id) => document.getElementById(id);
@@ -181,7 +197,7 @@
   }
 
   function heartbeatVisualPulse() {
-    const target = document.body; // se quiser: troque por um wrapper específico
+    const target = document.body;
     target.classList.remove("hb-pulse");
     void target.offsetWidth;
     target.classList.add("hb-pulse");
@@ -249,23 +265,8 @@
   }
 
   // =========================================================
-  // 6) ÁUDIO (intro + heartbeat + loading) + DETECTOR DE BATIDA
+  // 6) ÁUDIO (playlist crossfade + heartbeat + loading) + DETECTOR
   // =========================================================
-  const introMusic = new Audio(CONFIG.musicaSrc);
-  introMusic.preload = "auto";
-  introMusic.volume = CONFIG.musicaVolume;
-
-  const heart = new Audio(CONFIG.heartSrc);
-  heart.preload = "auto";
-  heart.loop = true;
-  heart.volume = CONFIG.heartVolume;
-  heart.playbackRate = CONFIG.heartMinRate;
-
-  const loadingMusic = new Audio(CONFIG.loadingSrc);
-  loadingMusic.preload = "auto";
-  loadingMusic.loop = true;
-  loadingMusic.volume = CONFIG.loadingVolume;
-
   function safePlay(a) {
     try {
       const p = a.play();
@@ -284,42 +285,193 @@
     return remainingMs() > CONFIG.blockMusicUnderMs;
   }
 
-  function safePlayIntro() {
+  // --- PLAYLIST COM CROSSFADE (A/B) + lembrar última faixa ---
+  let lastIndex = -1;
+  try {
+    const saved = localStorage.getItem(CONFIG.rememberKey);
+    if (saved !== null && saved !== "") {
+      const n = Number(saved);
+      if (Number.isFinite(n)) lastIndex = n;
+    }
+  } catch {}
+
+  const musicA = new Audio();
+  const musicB = new Audio();
+  musicA.preload = "auto";
+  musicB.preload = "auto";
+  musicA.volume = 0;
+  musicB.volume = 0;
+
+  let activeMusic = musicA;
+  let inactiveMusic = musicB;
+  let isCrossfading = false;
+
+  function persistLastIndex() {
+    try {
+      localStorage.setItem(CONFIG.rememberKey, String(lastIndex));
+    } catch {}
+  }
+
+  function pickNextIndex() {
+    const n = CONFIG.musicList.length;
+    if (!n) return -1;
+
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * n);
+    } while (idx === lastIndex && n > 1);
+
+    lastIndex = idx;
+    persistLastIndex();
+    return idx;
+  }
+
+  function getTrackSrcByIndex(idx) {
+    const name = CONFIG.musicList[idx];
+    if (!name) return "";
+    return CONFIG.musicFolder + name;
+  }
+
+  function stopPlaylistHard() {
+    isCrossfading = false;
+    try { activeMusic.onended = null; } catch {}
+    try { inactiveMusic.onended = null; } catch {}
+    stop(activeMusic);
+    stop(inactiveMusic);
+    try { activeMusic.volume = 0; } catch {}
+    try { inactiveMusic.volume = 0; } catch {}
+  }
+
+  function fadeOutStopPlaylist(ms = 1200) {
+    if (isCrossfading) return;
+
+    const a = activeMusic;
+    if (!a || a.paused) {
+      stopPlaylistHard();
+      return;
+    }
+
+    const startVol = a.volume;
+    const steps = 30;
+    let i = 0;
+
+    const t = setInterval(() => {
+      i++;
+      const k = 1 - i / steps;
+      const eased = k * k;
+
+      try { a.volume = Math.max(0, startVol * eased); } catch {}
+
+      if (i >= steps) {
+        clearInterval(t);
+        stopPlaylistHard();
+      }
+    }, ms / steps);
+  }
+
+  function playFirstTrackIfNeeded() {
     if (!isMusicAllowedNow()) return;
-    try {
-      introMusic.currentTime = CONFIG.musicaComecarEm || 0;
-      introMusic.volume = CONFIG.musicaVolume;
-      safePlay(introMusic);
-    } catch {}
+
+    // se já está tocando, não faz nada
+    if (activeMusic && !activeMusic.paused) return;
+
+    const idx = pickNextIndex();
+    if (idx < 0) return;
+
+    const src = getTrackSrcByIndex(idx);
+    if (!src) return;
+
+    activeMusic.src = src;
+    try { activeMusic.currentTime = 0; } catch {}
+    try { activeMusic.volume = CONFIG.musicaVolume; } catch {}
+    safePlay(activeMusic);
+
+    activeMusic.onended = async () => {
+      if (!isMusicAllowedNow()) return;
+      if (CONFIG.gapBetweenTracksMs > 0) await wait(CONFIG.gapBetweenTracksMs);
+      crossfadeToNext();
+    };
   }
 
-  function stopIntroNow() {
-    stop(introMusic);
-    try { introMusic.volume = CONFIG.musicaVolume; } catch {}
+  function crossfadeToNext() {
+    if (!isMusicAllowedNow()) return;
+    if (isCrossfading) return;
+
+    const idx = pickNextIndex();
+    if (idx < 0) return;
+
+    const src = getTrackSrcByIndex(idx);
+    if (!src) return;
+
+    isCrossfading = true;
+
+    // prepara a faixa nova no player inativo
+    inactiveMusic.src = src;
+    try { inactiveMusic.currentTime = 0; } catch {}
+    try { inactiveMusic.volume = 0; } catch {}
+
+    // começa a tocar a nova
+    safePlay(inactiveMusic);
+
+    const fadeMs = Math.max(200, CONFIG.crossfadeMs | 0);
+    const steps = 40;
+    let i = 0;
+
+    const startActiveVol = (() => {
+      try { return activeMusic.volume; } catch { return CONFIG.musicaVolume; }
+    })();
+
+    const tick = setInterval(() => {
+      i++;
+      const t = i / steps;              // 0..1
+      const eased = t * t;              // ease-in
+      const inv = 1 - eased;
+
+      // antiga desce, nova sobe
+      try { activeMusic.volume = Math.max(0, startActiveVol * inv); } catch {}
+      try { inactiveMusic.volume = Math.min(CONFIG.musicaVolume, CONFIG.musicaVolume * eased); } catch {}
+
+      if (i >= steps) {
+        clearInterval(tick);
+
+        // garante volumes finais
+        try { activeMusic.volume = 0; } catch {}
+        try { inactiveMusic.volume = CONFIG.musicaVolume; } catch {}
+
+        // para antiga
+        stop(activeMusic);
+
+        // troca ponteiros
+        const oldActive = activeMusic;
+        activeMusic = inactiveMusic;
+        inactiveMusic = oldActive;
+
+        // programa o próximo ao terminar
+        activeMusic.onended = async () => {
+          if (!isMusicAllowedNow()) return;
+          if (CONFIG.gapBetweenTracksMs > 0) await wait(CONFIG.gapBetweenTracksMs);
+          crossfadeToNext();
+        };
+
+        isCrossfading = false;
+      }
+    }, fadeMs / steps);
   }
 
-  function fadeOutStopIntro(ms = 1200) {
-    try {
-      if (introMusic.paused) return;
-      const startVol = introMusic.volume;
-      const steps = 30;
-      let i = 0;
+  // ===== HEARTBEAT =====
+  const heart = new Audio(CONFIG.heartSrc);
+  heart.preload = "auto";
+  heart.loop = true;
+  heart.volume = CONFIG.heartVolume;
+  heart.playbackRate = CONFIG.heartMinRate;
 
-      const t = setInterval(() => {
-        i++;
-        const k = 1 - i / steps;
-        const eased = k * k;
-        introMusic.volume = Math.max(0, startVol * eased);
+  // ===== LOADING =====
+  const loadingMusic = new Audio(CONFIG.loadingSrc);
+  loadingMusic.preload = "auto";
+  loadingMusic.loop = true;
+  loadingMusic.volume = CONFIG.loadingVolume;
 
-        if (i >= steps) {
-          clearInterval(t);
-          stopIntroNow();
-        }
-      }, ms / steps);
-    } catch {}
-  }
-
-  // ---- Detector real (Analyser) para sincronizar visual com o MP3 ----
+  // ---- Detector real (Analyser) para sincronizar visual com o MP3 do HEART ----
   let audioCtx = null;
   let heartSrcNode = null;
   let analyser = null;
@@ -383,7 +535,7 @@
   }
 
   function stopAllAudio() {
-    stopIntroNow();
+    fadeOutStopPlaylist(200);
     stop(heart);
     stop(loadingMusic);
     try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
@@ -404,10 +556,11 @@
     }
 
     function enableAudioFromGate() {
+      // desbloqueia autoplay no mobile
       try {
-        safePlay(introMusic);
-        introMusic.pause();
-        introMusic.currentTime = 0;
+        // “aquecimento” rápido
+        safePlay(activeMusic); activeMusic.pause(); activeMusic.currentTime = 0;
+        safePlay(inactiveMusic); inactiveMusic.pause(); inactiveMusic.currentTime = 0;
       } catch {}
 
       try {
@@ -415,7 +568,9 @@
         if (audioCtx.state === "suspended") audioCtx.resume();
       } catch {}
 
-      safePlayIntro();
+      // inicia playlist se permitido (antes dos 60s)
+      playFirstTrackIfNeeded();
+
       hideGate();
     }
 
@@ -446,7 +601,9 @@
     done = true;
     if (interval) clearInterval(interval);
 
-    stopIntroNow();
+    // para playlist imediatamente (sem crossfade)
+    stopPlaylistHard();
+
     stop(heart);
     try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
     stopHeartbeatDetector();
@@ -523,23 +680,28 @@
     const final60 = diffMs <= 60000 && diffMs > 0;
     document.documentElement.classList.toggle("final-phase", final60);
 
+    // >>> entra nos 60s finais: para playlist + entra heartbeat
     if (final60 && !tension60) {
       tension60 = true;
 
-      fadeOutStopIntro(CONFIG.fadeStopMs);
+      fadeOutStopPlaylist(CONFIG.fadeStopMs);
 
       try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
       safePlay(heart);
       startHeartbeatDetector();
     }
 
+    // >>> sai dos 60s finais (se acontecer por sync): para heartbeat e volta playlist
     if (!final60 && tension60) {
       tension60 = false;
       stop(heart);
       stopHeartbeatDetector();
       try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
+
+      playFirstTrackIfNeeded();
     }
 
+    // ramp do heartbeat nos últimos segundos
     if (final60) {
       const secLeft = Math.floor(diffMs / 1000);
 
@@ -553,6 +715,10 @@
       } else {
         try { heart.playbackRate = CONFIG.heartMinRate; } catch {}
       }
+    } else {
+      // se ainda pode tocar música, garante que a playlist rode
+      if (isMusicAllowedNow()) playFirstTrackIfNeeded();
+      else fadeOutStopPlaylist(250); // segurança: se ficar <=60s, corta música
     }
 
     const total = Math.floor(diffMs / 1000);
@@ -596,7 +762,9 @@
       }, CONFIG.resyncEveryMs);
     }
 
-    safePlayIntro();
+    // começa playlist (se permitido) — se o mobile bloquear, o gate resolve
+    playFirstTrackIfNeeded();
+
     update();
     interval = setInterval(update, 250);
 
