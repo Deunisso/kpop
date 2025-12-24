@@ -9,9 +9,9 @@
     nomeProjeto: "PREPARANDO O DROP",
     ano: 2025,
     mes: 12,
-    dia: 23,
-    hora: 20,
-    minuto: 30,
+    dia: 24,
+    hora: 10,
+    minuto: 0,
     segundo: 0,
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
