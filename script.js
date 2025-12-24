@@ -11,7 +11,7 @@
     mes: 12,
     dia: 24,
     hora: 10,
-    minuto: 40,
+    minuto: 50,
     segundo: 0,
 
     redirectPara: new URL("./phases/index.html", window.location.href).toString(),
