@@ -9,9 +9,9 @@
 
     2: { y: 2025, m: 12, d: 24, hh: 10, mm: 0, ss: 0 }, // Phase 3
 
-    3: { y: 2025, m: 12, d: 26, hh: 10, mm: 0, ss: 0 }, // Phase 4
+    3: { y: 2025, m: 12, d: 25, hh: 10, mm: 0, ss: 0 }, // Phase 4
 
-    4: { y: 2025, m: 12, d: 27, hh: 10, mm: 0, ss: 0 }, // Phase 5
+    4: { y: 2025, m: 12, d: 26, hh: 10, mm: 0, ss: 0 }, // Phase 5
   };
 
   const TIME_API = "https://worldtimeapi.org/api/timezone/America/Sao_Paulo";
