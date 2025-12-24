@@ -2,7 +2,7 @@
 // 🔒 BLOQUEIO GLOBAL DA PÁGINA (ANTI TROCAR HORA)
 // Libera somente em: 24/12/2025 20:00:00 (Brasília)
 // =========================================================
-const PAGE_RELEASE = { y: 2025, m: 12, d: 24, hh: 10, mm: 0, ss: 0 };
+const PAGE_RELEASE = { y: 2025, m: 12, d: 23, hh: 10, mm: 0, ss: 0 };
 const TIME_API = "https://worldtimeapi.org/api/timezone/America/Sao_Paulo";
 const RESYNC_EVERY_MS = 30_000;
 
