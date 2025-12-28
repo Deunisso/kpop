@@ -9,7 +9,7 @@
     nomeProjeto: "PREPARANDO O DROP",
     ano: 2025,
     mes: 12,
-    dia: 25,
+    dia: 23,
     hora: 10,
     minuto: 0,
     segundo: 0,
