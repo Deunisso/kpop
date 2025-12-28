@@ -36,7 +36,7 @@ let allMusic = [
     },
 
     {
-        name: "",
+        name: "IT'S OKAY",
         artist: "Eleven",
         img: "Okay",
         src: "Okay"

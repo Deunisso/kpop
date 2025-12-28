@@ -26,6 +26,7 @@
     { name: "Proud", role: "Phase 3" },
     { name: "Angels", role: "Phase 4" },
     { name: "Eleven", role: "Phase 5" },
+    { name: "Error", role: "Phase 6" },
   ];
 
   const caminhos = {
@@ -34,6 +35,7 @@
     2: "../phase3/index.html",
     3: "../phase4/index.html",
     4: "../phase5/index.html",
+    5: "../phase6/index.html",
   };
 
   const cards = document.querySelectorAll(".card");
