@@ -36,7 +36,7 @@ let allMusic = [
     },
     
     {
-        name: "NO BRAKES (TRAP)",
+        name: "NO BRAKES",
         artist: "I love our intensity",
         img: "Explicit",
         src: "Explicit"

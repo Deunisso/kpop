@@ -1,59 +1,59 @@
 let allMusic = [
 
-    {
-        name: "무한한 사랑",
-        artist: "Error",
-        img: "무한한 사랑",
-        src: "무한한 사랑"
-    },
+  {
+    name: "무한한 사랑",
+    artist: "Error",
+    img: "infinity_love",
+    src: "infinity_love"
+  },
 
-    {
-        name: "내 자리는 너야",
-        artist: "Error",
-        img: "내 자리는 너야",
-        src: "내 자리는 너야"
-    },
+  {
+    name: "내 자리는 너야",
+    artist: "Error",
+    img: "my_place_is_you",
+    src: "my_place_is_you"
+  },
 
-    {
-        name: "내 힘에는 이름이 있어",
-        artist: "Error",
-        img: "내 힘에는 이름이 있어",
-        src: "내 힘에는 이름이 있어"
-    },
+  {
+    name: "내 힘에는 이름이 있어",
+    artist: "Error",
+    img: "power_got_a_name",
+    src: "power_got_a_name"
+  },
 
-    {
-        name: "리얼 퀸",
-        artist: "Error",
-        img: "리얼 퀸",
-        src: "리얼 퀸"
-    },
+  {
+    name: "리얼 퀸",
+    artist: "Error",
+    img: "real_queen",
+    src: "real_queen"
+  },
 
-    {
-        name: "타임 루프",
-        artist: "Error",
-        img: "타임 루프",
-        src: "타임 루프"
-    },
+  {
+    name: "타임 루프",
+    artist: "Error",
+    img: "time_loop",
+    src: "time_loop"
+  },
 
-    {
-        name: "아직도 빠져들고 있어",
-        artist: "Error",
-        img: "아직도 빠져들고 있어",
-        src: "아직도 빠져들고 있어"
-    },
+  {
+    name: "아직도 빠져들고 있어",
+    artist: "Error",
+    img: "still_falling",
+    src: "still_falling"
+  },
 
-    {
-        name: "영혼과 영혼",
-        artist: "Error",
-        img: "영혼과 영혼",
-        src: "영혼과 영혼"
-    },
+  {
+    name: "영혼과 영혼",
+    artist: "Error",
+    img: "soul_to_soul",
+    src: "soul_to_soul"
+  },
 
-    {
-        name: "공허",
-        artist: "Error",
-        img: "공허",
-        src: "공허"
-    },
+  {
+    name: "공허",
+    artist: "Error",
+    img: "void",
+    src: "void"
+  }
 
-]
+];

@@ -1,4 +1,5 @@
 window.ASSETS_MANIFEST = [
+
   "./img/Avengers.jpg",
   "./img/Back.png",
   "./img/Dancing.gif",
@@ -99,4 +100,23 @@ window.ASSETS_MANIFEST = [
   "./phase5/img/Okay.jpg",
   "./phase5/img/Tayara.jpg",
   "./phase5/img/Unfiltered.jpg",
+
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+  "./phase6/music/.mp3",
+
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+  "./phase6/img/.jpg",
+
 ];
