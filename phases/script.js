@@ -15,7 +15,6 @@
     
     5: { y: 2025, m: 12, d: 23, hh: 10, mm: 0, ss: 0 }, // Bonus 1
 
-    6: { y: 2025, m: 12, d: 23, hh: 10, mm: 0, ss: 0 }, // Bonus 2
   };
 
   const TIME_API = "https://worldtimeapi.org/api/timezone/America/Sao_Paulo";
@@ -31,7 +30,6 @@
     { name: "Angels", role: "Phase 4" },
     { name: "Eleven", role: "Phase 5" },
     { name: "Error", role: "Bonus 1" },
-    { name: "404", role: "Bonus 2" },
   ];
 
   const caminhos = {
@@ -41,7 +39,6 @@
     3: "../phase4/index.html",
     4: "../phase5/index.html",
     5: "../phase6/index.html",
-    6: "../phase7/index.html",
   };
 
   const cards = document.querySelectorAll(".card");
