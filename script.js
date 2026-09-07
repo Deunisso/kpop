@@ -121,13 +121,27 @@ async function playTrack(index) {
     npTitle.textContent = song.title;
     npArtist.textContent = "Karaokê Local";
     npThumb.src = song.image;
+
+    // Prioriza o formato .gif caso exista, recorrendo ao .jpg se necessário
+    const gifImage = song.image.replace(/\.[^/.]+$/, ".gif");
     
-    // Aplica o gradiente escuro por cima da capa individual da música atual
-    stageArea.style.backgroundImage = `linear-gradient(180deg, rgba(20,10,35,0.7) 0%, rgba(18,18,18,0.95) 100%), url("${song.image}")`;
+    // Testa se o gif existe ou define a lógica de fundo com base nele
+    // (Caso queira testar diretamente a existência ou aplicar com fallback via CSS/JS)
+    const tempImg = new Image();
+    tempImg.src = gifImage;
+    
+    tempImg.onload = () => {
+        // Se o GIF carregar com sucesso, usa ele no fundo
+        stageArea.style.backgroundImage = `linear-gradient(180deg, rgba(20,10,35,0.7) 0%, rgba(18,18,18,0.95) 100%), url("${gifImage}")`;
+    };
+    tempImg.onerror = () => {
+        // Caso contrário, usa a imagem padrão (.jpg)
+        stageArea.style.backgroundImage = `linear-gradient(180deg, rgba(20,10,35,0.7) 0%, rgba(18,18,18,0.95) 100%), url("${song.image}")`;
+    };
+
     stageArea.style.backgroundSize = 'cover';
     stageArea.style.backgroundPosition = 'center';
 
-    // Restante da função...
     const items = playlistSidebar.querySelectorAll('.track-item');
     items.forEach((el, idx) => {
         if (idx === currentTrackIndex) {
