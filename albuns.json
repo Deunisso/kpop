@@ -1,0 +1,76 @@
+[
+  {
+    "albumTitle": "Infinity Love",
+    "cover": "../Albuns/Infinity Love.webp",
+    "songs": [
+      "Orange",
+      "Red",
+      "Yellow",
+      "Blue",
+      "Purple",
+      "Green",
+      "Black",
+      "White"
+    ]
+  },
+
+  {
+    "albumTitle": "Lovers",
+    "cover": "../Albuns/Lovers.webp",
+    "songs": [
+      "Always You",
+      "Eleven Ways To Love You",
+      "Great Responsibilities",
+      "Heart Without Armor",
+      "Hard Calm",
+      "Hold Me Here",
+      "No Brakes",
+      "One World Left"
+    ]
+  },
+
+  {
+    "albumTitle": "Proud",
+    "cover": "../Albuns/Proud.webp",
+    "songs": [
+      "Called By The Ocean",
+      "Colgate",
+      "I Don't Want To Miss A Thing",
+      "Just The Way You Are",
+      "My Christmas Wish",
+      "New Year, Same Us",
+      "Proud Of You",
+      "Still Walking With You"
+    ]
+  },
+
+  {
+    "albumTitle": "Angels",
+    "cover": "../Albuns/Angels.webp",
+    "songs": [
+      "Bathroom Panic",
+      "Lights Off",
+      "Maldita",
+      "Next Year In Rio",
+      "Ocean Nights",
+      "Roller Skates",
+      "We Loved You",
+      "White Chocolate"
+    ]
+  },
+  
+  {
+    "albumTitle": "Eleven",
+    "cover": "../Albuns/Eleven.webp",
+    "songs": [
+      "Carry The Fire",
+      "Guac & Chips Love",
+      "It's Okay",
+      "Lady & Tramp",
+      "Low Frequency",
+      "Purple Eleven",
+      "Tayara",
+      "Unfiltered"
+    ]
+  }  
+]

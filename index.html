@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotiTay</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="brand">🎵 SpotiTay</div>
+        <div class="nav-actions">
+            <button id="togglePlaylistBtn" class="btn-icon mobile-only" style="margin-right: 10px;">📜 Músicas</button>
+            <button id="showAlbumsBtn" class="btn-icon">💿 Álbuns</button>
+        </div>
+        <div id="statusInfo" class="status-info">Carregando álbuns...</div>
+    </header>
+
+    <!-- Layout Principal -->
+    <div class="main-layout">
+        <!-- Barra Lateral de Músicas -->
+        <aside id="playlistSidebar" class="playlist-sidebar">
+            <!-- As músicas serão injetadas aqui via JavaScript -->
+        </aside>
+
+        <!-- Container da Grade de Álbuns -->
+        <div id="albumsView" class="albums-container">
+            <h2>Álbuns</h2>
+            <div id="albumsGrid" class="albums-grid"></div>
+        </div>
+
+        <!-- Palco da Letra -->
+        <main id="stageArea" class="stage-area">
+            <button id="closeFullscreenBtn" class="close-fullscreen-btn" aria-label="Sair da Tela Cheia">✕</button>
+            <div id="lyricsContainer" class="lyrics-container">
+                <div class="empty-state">
+                    <h2>Selecione um álbum ou música</h2>
+                    <p>Aproveite o seu karaokê!</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Rodapé / Player de Áudio Estilo Spotify -->
+    <player-footer>
+        <div class="now-playing">
+            <img id="npThumb" src="" alt="Capa" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'44\' height=\'44\' fill=\'%23333\'><rect width=\'44\' height=\'44\'/></svg>'">
+            <div class="np-details">
+                <h4 id="npTitle">Nenhuma música</h4>
+                <p id="npArtist">Karaokê Local</p>
+            </div>
+        </div>
+
+        <div class="player-controls-center">
+            <div class="player-main-controls">
+                <button id="playPauseBtn" class="spotify-play-btn" aria-label="Play/Pause">
+                    <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/></svg>
+                    <svg id="pauseIcon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+            </div>
+            <div class="progress-container">
+                <span id="currentTime">0:00</span>
+                <div id="progressBar" class="progress-bar">
+                    <div id="progressFilled" class="progress-filled"></div>
+                </div>
+                <span id="durationTime">0:00</span>
+            </div>
+        </div>
+
+        <div class="player-actions">
+            <button id="fullscreenToggle" class="btn-icon">🔲 Tela Cheia</button>
+        </div>
+    </player-footer>
+
+    <!-- Áudio Oculto -->
+    <audio id="audioPlayer" style="display:none;"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
