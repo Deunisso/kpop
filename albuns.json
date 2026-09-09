@@ -16,7 +16,7 @@
 
   {
     "albumTitle": "Lovers",
-    "cover": "../Albuns/Lovers.webp",
+    "cover": "../kpop/Albuns/Lovers.webp",
     "songs": [
       "Always You",
       "Eleven Ways To Love You",
@@ -31,7 +31,7 @@
 
   {
     "albumTitle": "Proud",
-    "cover": "../Albuns/Proud.webp",
+    "cover": "../kpop/Albuns/Proud.webp",
     "songs": [
       "Called By The Ocean",
       "Colgate",
@@ -46,7 +46,7 @@
 
   {
     "albumTitle": "Angels",
-    "cover": "../Albuns/Angels.webp",
+    "cover": "../kpop/Albuns/Angels.webp",
     "songs": [
       "Bathroom Panic",
       "Lights Off",
@@ -61,7 +61,7 @@
   
   {
     "albumTitle": "Eleven",
-    "cover": "../Albuns/Eleven.webp",
+    "cover": "../kpop/Albuns/Eleven.webp",
     "songs": [
       "Carry The Fire",
       "Guac & Chips Love",
